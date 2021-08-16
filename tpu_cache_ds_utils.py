@@ -1,1 +1,60 @@
-{"metadata":{"kernelspec":{"language":"python","display_name":"Python 3","name":"python3"},"language_info":{"pygments_lexer":"ipython3","nbconvert_exporter":"python","version":"3.6.4","file_extension":".py","codemirror_mode":{"name":"ipython","version":3},"name":"python","mimetype":"text/x-python"}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"# %% [code]\nfrom tpu_utility_1 import *\n\nimport torch_xla  # as a decoration here. \nimport torch_xla.core.xla_model as xm\nimport torch_xla.debug.metrics as met\nimport torch_xla.distributed.parallel_loader as pl\nimport torch_xla.distributed.xla_multiprocessing as xmp\nimport torch_xla.utils.utils as xu\nimport torch_xla.utils.cached_dataset as xcd\n\nimport torch\nimport torch.nn as nn\nimport torch.utils.data as D\nfrom torch.optim import lr_scheduler\n\nimport numpy as np \nimport pandas as pd \nimport os\nfrom IPython.display import clear_output\n\n# %% [code] {\"jupyter\":{\"outputs_hidden\":false}}\ndef cache_dataset(train_ds=None, val_ds=None, get_dataset=None, compress=False, **kwargs):\n    \"\"\"\n    train_ds: (PyTorch Dataset) training dataset. \n    val_ds: (PyTorch Dataset) validation dataset.\n    get_dataset (Python Function) (only used if train_ds and val_ds are not passed.)\n        Function that returns train_ds and val_ds as tuple. \n    compress: Whether to .tar.gz the output folder. Defaults: False. \n    kwargs: keyword arguments that are passed into get_dataset. \n    \"\"\"\n    if (train_ds is get_dataset is None) or (val_ds is get_dataset is None): \n        raise ValueError(\"Please pass in (train_ds AND val_ds) OR get_dataset. \")\n    \n    def _mp_fn(index, train_ds, val_ds, **kwargs):\n        if get_dataset: train_ds, val_ds = get_dataset(**kwargs)\n        train_ds = xcd.CachedDataset(train_ds, \"./cached-train\")\n        val_ds = xcd.CachedDataset(val_ds, \"./cached-val\")\n        print(\"Creating training dataset.\")\n        train_ds.warmup()\n        print(\"Done\\nCreating validationd dataset.\")\n        val_ds.warmup()\n        print(\"Done\")\n        \n    xmp.spawn(_mp_fn, args=(train_ds, val_ds, **kwargs,), start_method=\"fork\", nprocs=1)\n    \n    clear_output()\n    \n    if compress:\n        print(\"Compressing validation dataset (before training dataset)\")\n        os.system(\"tar czf cached-val.tar.gz ./cached-val\")\n        print(\"Deleting original folder (to save disk space)\")\n        os.system(\"rm -r ./cached-val\")\n        print(\"Compressed validation dataset\")\n        \n        print(\"Compressing training dataset\")\n        os.system(\"tar czf cached-train.tar.gz ./cached-train\")\n        print(\"Deleting original folder to save disk space\")\n        os.system(\"rm -r ./cached-train\")\n        print(\"Compresed training dataset.\")","metadata":{"_uuid":"316c87bd-9e57-4242-b75c-7ade2abaf194","_cell_guid":"8136092f-1c55-4b7a-8f96-96eb7f630315","collapsed":false,"jupyter":{"outputs_hidden":false},"trusted":true},"execution_count":null,"outputs":[]}]}
+# %% [code]
+from tpu_utility_1 import *
+
+import torch_xla  # as a decoration here. 
+import torch_xla.core.xla_model as xm
+import torch_xla.debug.metrics as met
+import torch_xla.distributed.parallel_loader as pl
+import torch_xla.distributed.xla_multiprocessing as xmp
+import torch_xla.utils.utils as xu
+import torch_xla.utils.cached_dataset as xcd
+
+import torch
+import torch.nn as nn
+import torch.utils.data as D
+from torch.optim import lr_scheduler
+
+import numpy as np 
+import pandas as pd 
+import os
+from IPython.display import clear_output
+
+# %% [code] {"jupyter":{"outputs_hidden":false}}
+def cache_dataset(train_ds=None, val_ds=None, get_dataset=None, compress=False, **kwargs):
+    """
+    train_ds: (PyTorch Dataset) training dataset. 
+    val_ds: (PyTorch Dataset) validation dataset.
+    get_dataset (Python Function) (only used if train_ds and val_ds are not passed.)
+        Function that returns train_ds and val_ds as tuple. 
+    compress: Whether to .tar.gz the output folder. Defaults: False. 
+    kwargs: keyword arguments that are passed into get_dataset. 
+    """
+    if (train_ds is get_dataset is None) or (val_ds is get_dataset is None): 
+        raise ValueError("Please pass in (train_ds AND val_ds) OR get_dataset. ")
+    
+    def _mp_fn(index, train_ds, val_ds, **kwargs):
+        if get_dataset: train_ds, val_ds = get_dataset(**kwargs)
+        train_ds = xcd.CachedDataset(train_ds, "./cached-train")
+        val_ds = xcd.CachedDataset(val_ds, "./cached-val")
+        print("Creating training dataset.")
+        train_ds.warmup()
+        print("Done\nCreating validationd dataset.")
+        val_ds.warmup()
+        print("Done")
+        
+    xmp.spawn(_mp_fn, args=(train_ds, val_ds, **kwargs,), start_method="fork", nprocs=1)
+    
+    clear_output()
+    
+    if compress:
+        print("Compressing validation dataset (before training dataset)")
+        os.system("tar czf cached-val.tar.gz ./cached-val")
+        print("Deleting original folder (to save disk space)")
+        os.system("rm -r ./cached-val")
+        print("Compressed validation dataset")
+        
+        print("Compressing training dataset")
+        os.system("tar czf cached-train.tar.gz ./cached-train")
+        print("Deleting original folder to save disk space")
+        os.system("rm -r ./cached-train")
+        print("Compresed training dataset.")
