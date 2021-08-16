@@ -20,7 +20,7 @@ import os
 from IPython.display import clear_output
 
 # %% [code] {"jupyter":{"outputs_hidden":false}}
-def cache_dataset(train_ds=None, val_ds=None, get_dataset=None, compress=False, **kwargs):
+def cache_dataset(train_ds=None, val_ds=None, get_dataset=None, compress=False):
     """
     train_ds: (PyTorch Dataset) training dataset. 
     val_ds: (PyTorch Dataset) validation dataset.
@@ -32,8 +32,8 @@ def cache_dataset(train_ds=None, val_ds=None, get_dataset=None, compress=False, 
     if (train_ds is get_dataset is None) or (val_ds is get_dataset is None): 
         raise ValueError("Please pass in (train_ds AND val_ds) OR get_dataset. ")
     
-    def _mp_fn(index, train_ds, val_ds, **kwargs):
-        if get_dataset: train_ds, val_ds = get_dataset(**kwargs)
+    def _mp_fn(index, train_ds, val_ds):
+        if get_dataset: train_ds, val_ds = get_dataset()
         train_ds = xcd.CachedDataset(train_ds, "./cached-train")
         val_ds = xcd.CachedDataset(val_ds, "./cached-val")
         print("Creating training dataset.")
@@ -42,7 +42,7 @@ def cache_dataset(train_ds=None, val_ds=None, get_dataset=None, compress=False, 
         val_ds.warmup()
         print("Done")
         
-    xmp.spawn(_mp_fn, args=(train_ds, val_ds, **kwargs,), start_method="fork", nprocs=1)
+    xmp.spawn(_mp_fn, args=(train_ds, val_ds,), start_method="fork", nprocs=1)
     
     clear_output()
     

@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+pillow
+sklearn
+tqdm
+torch==1.7.0
+torchvision==0.8.0
+torchaudio==0.7.0

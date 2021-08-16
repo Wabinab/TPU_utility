@@ -306,7 +306,7 @@ class LRFinder:
         return lr[np.argmax(losses[:-1] - losses[1:])]
 
 # %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:52:31.990760Z","iopub.execute_input":"2021-08-13T07:52:31.991354Z","iopub.status.idle":"2021-08-13T07:52:31.996891Z","shell.execute_reply.started":"2021-08-13T07:52:31.991293Z","shell.execute_reply":"2021-08-13T07:52:31.996033Z"}}
-def lr_finder(model, opt, criterion, dls=None, train_loader=None, device):
+def lr_finder(model, opt, criterion, dls=None, train_loader=None, device=None):
     """
     Learning Rate Finder with default values. 
     model: your model.
