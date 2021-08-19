@@ -369,8 +369,8 @@ def annealing_cos(start, end, pct):
 class OneCyclePolicy_TPU:
     def __init__(self, model, opt, criterion, FLAGS, num_iter=None, train_ds=None,
                  momentum=(0.95, 0.85), div_factor=25, pct_start=0.4,
-                train_transform=None, val_transform=None, channels_last=True,
-                get_dataset=None, cache_train_loc=None, cache_val_loc=None):
+                # train_transform=None, val_transform=None, 
+                channels_last=True, get_dataset=None, cache_train_loc=None, cache_val_loc=None):
         """
         :args:
         
@@ -383,10 +383,9 @@ class OneCyclePolicy_TPU:
         train_ds: (IF num_iter IS NONE): (PyTorch Dataset) pass in training dataset. 
         momentum: Default: (0.95, 0.85)  # momentum for optimizer.
         div_factor: (int) Minimum learning rate: max_learning_rate / div_factor. 
-        pct_start: (float) starting percentage. 
-        device:
-        train_transform: Not used. 
-        val_transform: Not used. 
+        pct_start: (float) starting percentage. Defaults 0.4.
+        # train_transform: Not used. 
+        # val_transform: Not used. 
         channels_last: (bool) Whether to have NHWC instead of NCHW format. 
         get_dataset: (python function). Should returns train_ds, val_ds. Required if 
             you don't define cache_train_loc and cache_val_loc. 
@@ -415,13 +414,14 @@ class OneCyclePolicy_TPU:
         a2 = n - a1
         self.phases = ((a1, annealing_linear), (a2, annealing_cos))
         
-        self.lr_scheds = None
-        self.mom_scheds = None
-        self.idx_s = 0
+        max_lr = self.flags["lr"] * xm.xrt_world_size()
+        min_lr = max_lr / self.div_factor
+        self.lr_scheds = self.steps((min_lr, max_lr), (max_lr, min_lr / 1e4))
+        self.mom_scheds = self.steps(self.momentum, self.momentum[::-1])
+        self.update_lr_mom(self.lr_scheds[0].start, self.mom_scheds[0].start)
         
         self.div_factor = div_factor
         self.momentum = momentum
-        
 
         # Future development
         self.train_transform = train_transform
@@ -450,7 +450,11 @@ class OneCyclePolicy_TPU:
             elif isinstance(self.opt, torch.optim.SGD):
                 l["momentum"] = mom
     
-    def train_tpu(self, train_ds, val_ds):
+    def train_tpu(self, train_ds, val_ds, fixed_lr=True):
+        """
+        :args fixed_lr: (bool) Whether to use a fixed_lr defined in FLAGS. 
+            Defaults: True. 
+        """
         torch.manual_seed(self.flags["seed"])
         
         if train_ds is None: train_ds, val_ds = self.SERIAL_EXEC.run(get_dataset)
@@ -459,76 +463,77 @@ class OneCyclePolicy_TPU:
         device = xm.xla_device()
         model = self.WRAPPED_MODEL.to(device)
         
-        self.SERIAL_EXEC.run(lambda: self.lrfinder(model, dls["train"]))
+        if not fixed_lr: self.SERIAL_EXEC.run(lambda: self.lrfinder(model, dls["train"]))
         
-        def train_loop_fn(loader):
-            tracker = xm.RateTracker()
-            model.train()
+#         def train_loop_fn(loader):
+#             tracker = xm.RateTracker()
+#             model.train()
             
-            running_loss = 0.0
-            total_samples = 0
+#             running_loss = 0.0
+#             total_samples = 0
             
-            for data, target in tqdm(loader):
-                self.opt.zero_grad()
-                data, target = data.to(device), target.to(device)
-                if self.chls: data = data.to(memory_format=torch.channels_last)
+#             for data, target in tqdm(loader):
+#                 self.opt.zero_grad()
+#                 data, target = data.to(device), target.to(device)
+#                 if self.chls: data = data.to(memory_format=torch.channels_last)
                 
-                output = model(data)
-                loss = self.criterion(output, target.to(torch.float32))
+#                 output = model(data)
+#                 loss = self.criterion(output, target.to(torch.float32))
+# #                 preds = (torch.sigmoid(output).data > 0.5).to(torch.float32)
+                
+#                 loss.backward()
+#                 xm.optimizer_step(self.opt)
+#                 self.update_lr_mom(self.lr_scheds[self.idx_s].step(),
+#                                     self.mom_scheds[self.idx_s].step())
+                            
+#                 if self.lr_scheds[self.idx_s].is_done: self.idx_s += 1
+#                 tracker.add(self.flags["bs"])
+                
+#                 running_loss += loss.item() * data.size(0)
+#                 total_samples += data.size(0)
+
+#             return running_loss, total_samples
+            
+#         def test_loop_fn(loader):
+#             total_samples = 0
+#             running_loss, f1Score = 0.0, 0.0
+#             model.eval()
+            
+#             for data, target in tqdm(loader):
+#                 data, target = data.to(device), target.to(device)
+                
+#                 output = model(data)
+#                 loss = self.criterion(output, target.to(torch.float32))
 #                 preds = (torch.sigmoid(output).data > 0.5).to(torch.float32)
                 
-                loss.backward()
-                xm.optimizer_step(self.opt)
-                self.update_lr_mom(self.lr_scheds[self.idx_s].step(),
-                                    self.mom_scheds[self.idx_s].step())
-                            
-                if self.lr_scheds[self.idx_s].is_done: self.idx_s += 1
-                tracker.add(self.flags["bs"])
+#                 total_samples += data.size(0)
+#                 running_loss += loss.item() * data.size(0)
                 
-                running_loss += loss.item() * data.size(0)
-                total_samples += data.size(0)
-
-            return running_loss, total_samples
+#                 target = target.cpu().to(torch.int).numpy()
+#                 preds = preds.cpu().to(torch.int).numpy()
+                
+#                 f1Score += f1_score(target, preds, average="weighted") * data.size(0)
+                
+#             epoch_loss = running_loss / total_samples
+#             epoch_f1score = f1Score / total_samples
             
-        def test_loop_fn(loader):
-            total_samples = 0
-            running_loss, f1Score = 0.0, 0.0
-            model.eval()
-            
-            for data, target in tqdm(loader):
-                data, target = data.to(device), target.to(device)
-                
-                output = model(data)
-                loss = self.criterion(output, target.to(torch.float32))
-                preds = (torch.sigmoid(output).data > 0.5).to(torch.float32)
-                
-                total_samples += data.size(0)
-                running_loss += loss.item() * data.size(0)
-                
-                target = target.cpu().to(torch.int).numpy()
-                preds = preds.cpu().to(torch.int).numpy()
-                
-                f1Score += f1_score(target, preds, average="weighted") * data.size(0)
-                
-            epoch_loss = running_loss / total_samples
-            epoch_f1score = f1Score / total_samples
-            
-#             print(f"""
-#                 Val loss: {epoch_loss} | 
-#                 Val F1Score: {epoch_f1score} | 
-#             """, flush=True)
-            return epoch_loss, epoch_f1score, data, preds, target
+# #             print(f"""
+# #                 Val loss: {epoch_loss} | 
+# #                 Val F1Score: {epoch_f1score} | 
+# #             """, flush=True)
+#             return epoch_loss, epoch_f1score, data, preds, target
         
         for epoch in range(1, self.flags["num_epochs"] + 1):
             para_loader = pl.ParallelLoader(dls["train"], [device])
-            running_loss, total_samples = train_loop_fn(para_loader.per_device_loader(device))
+            running_loss, total_samples = self.train_loop_fn(
+                                    para_loader.per_device_loader(device), model)
             clear_output(wait=True)
             xm.master_print(f"Finished training epoch {epoch}")
             xm.master_print(f"Train loss: {running_loss / total_samples}", flush=True)
             
             para_loader = pl.ParallelLoader(dls["val"], [device])
-            test_loss, f1score, data, pred, targ = test_loop_fn(
-                                    para_loader.per_device_loader(device))
+            test_loss, f1score, data, pred, targ = self.test_loop_fn(
+                                    para_loader.per_device_loader(device), model)
             xm.master_print(f"""
                 Val loss: {test_loss} | 
                 Val F1Score: {f1score} | 
@@ -551,19 +556,65 @@ class OneCyclePolicy_TPU:
     def train(self):
         import gc
         gc.collect()
-        try:
-            xmp.spawn(self._mp_fn, args=(), nprocs=self.flags["num_cores"], start_method="fork")
-        except Exception: 
-            print("""
-                xm.xla_device() had been defined previously hence you see the above error.
-                I killed the kernel for you. Please run Jupyter kernel from the beginning.
-                If jupyter kernel killed failed, please restart jupyter kernel yourself.
-                On extreme cases, please use "factory reset" (available on Colab and Kaggle).
-                In other cases, please check you have not called xm.xla_device() in previous cells.
-                Note: xm.xla_device() can only be called once per kernel lifetime to use 
-                    multiple TPU cores. 
-            """)
-            os._exit(00)
+        xmp.spawn(self._mp_fn, args=(), nprocs=self.flags["num_cores"], start_method="fork")
+
+    def train_loop_fn(self, loader, model):
+        tracker = xm.RateTracker()
+        model.train()
+        
+        running_loss = 0.0
+        total_samples = 0
+        
+        for data, target in tqdm(loader):
+            self.opt.zero_grad()
+            data, target = data.to(device), target.to(device)
+            if self.chls: data = data.to(memory_format=torch.channels_last)
+            
+            output = model(data)
+            loss = self.criterion(output, target.to(torch.float32))
+#                 preds = (torch.sigmoid(output).data > 0.5).to(torch.float32)
+            
+            loss.backward()
+            xm.optimizer_step(self.opt)
+            self.update_lr_mom(self.lr_scheds[self.idx_s].step(),
+                                self.mom_scheds[self.idx_s].step())
+                        
+            if self.lr_scheds[self.idx_s].is_done: self.idx_s += 1
+            tracker.add(self.flags["bs"])
+            
+            running_loss += loss.item() * data.size(0)
+            total_samples += data.size(0)
+
+        return running_loss, total_samples
+
+    def test_loop_fn(self, loader, model):
+        total_samples = 0
+        running_loss, f1Score = 0.0, 0.0
+        model.eval()
+        
+        for data, target in tqdm(loader):
+            data, target = data.to(device), target.to(device)
+            
+            output = model(data)
+            loss = self.criterion(output, target.to(torch.float32))
+            preds = (torch.sigmoid(output).data > 0.5).to(torch.float32)
+            
+            total_samples += data.size(0)
+            running_loss += loss.item() * data.size(0)
+            
+            target = target.cpu().to(torch.int).numpy()
+            preds = preds.cpu().to(torch.int).numpy()
+            
+            f1Score += f1_score(target, preds, average="weighted") * data.size(0)
+            
+        epoch_loss = running_loss / total_samples
+        epoch_f1score = f1Score / total_samples
+        
+#             print(f"""
+#                 Val loss: {epoch_loss} | 
+#                 Val F1Score: {epoch_f1score} | 
+#             """, flush=True)
+        return epoch_loss, epoch_f1score, data, preds, target
             
 
 # %% [markdown]

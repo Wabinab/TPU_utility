@@ -3,11 +3,11 @@ ports:
   - port: 8888
   - port: 8080
 
-# tasks:
-#   - init: npm install
-#     command: |
-#       python -m pip install --upgrade pip
-#       pip install -r requirements.txt
+tasks:
+  - init: npm install
+    command: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
       
 github:
   prebuilds:
