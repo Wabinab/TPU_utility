@@ -162,14 +162,19 @@ class CosineScheduler(lr_scheduler._LRScheduler):
         cos_out = np.cos(np.pi * pct) + 1
         return [self.end_lr + (base_lr - self.end_lr) / 2 * cos_out for base_lr in self.base_lrs]
 
+# Originally taken from https://nbviewer.jupyter.org/github/aman5319/Multi-Label/blob/master/Classify_scenes.ipynb
+# Some information are gotten from https://github.com/davidtvs/pytorch-lr-finder/blob/master/torch_lr_finder/lr_finder.py
+
 # %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:51:49.119992Z","iopub.execute_input":"2021-08-13T07:51:49.120494Z","iopub.status.idle":"2021-08-13T07:51:49.145708Z","shell.execute_reply.started":"2021-08-13T07:51:49.120439Z","shell.execute_reply":"2021-08-13T07:51:49.144652Z"}}
 class LRFinder:
     
-    def __init__(self, model, opt, criterion, train_loader=None, start_lr=1e-7, device=None):
+    def __init__(self, model, opt, criterion, train_loader=None, val_loader=None,
+                 start_lr=1e-7, device=None):
         self.model = copy.deepcopy(model)
         self.opt = opt
         self.criterion = criterion
         self.train_loader = train_loader
+        self.val_loader = val_loader
         
         # Save model initial dict
 #         self.save_file = Path("./")
@@ -193,17 +198,24 @@ class LRFinder:
 #         return self.model
         return None
     
+    # def calculate_smoothing_value(self, beta):
+    #     n, mov_avg = 0, 0
+    #     while True:
+    #         n += 1
+    #         value = yield
+    #         mov_avg = beta * mov_avg + (1 - beta) * value
+    #         smooth = mov_avg / (1 - beta**n)
+    #         yield smooth
+
     def calculate_smoothing_value(self, beta):
-        n, mov_avg = 0, 0
         while True:
-            n += 1
-            value = yield
-            mov_avg = beta * mov_avg + (1 - beta) * value
-            smooth = mov_avg / (1 - beta**n)
-            yield smooth
+            loss, prev_loss = yield
+            loss = beta * loss + (1 - beta) * prev_loss
+            yield loss
+
             
-    def lr_find(self, train_loader=None, end_lr=10, num_iter=150, step_mode="exp", 
-               loss_smoothing_beta=0.99, diverge_th=5, device=None):
+    def lr_find(self, train_loader=None, val_loader=None, end_lr=10, num_iter=150, step_mode="exp", 
+               loss_smoothing_beta=0.05, diverge_th=5, device=None, non_blocking=True):
         """
         Performs LR Find test
         
@@ -212,9 +224,10 @@ class LRFinder:
             end_lr: maximum lr to stop. 
             num_iter: max iterations.
             step_mode: anneal function. Default 'exp'. Choices 'linear', 'cos'. 
-            loss_smoothing_beta: loss smoothing factor. Range: [0, 1)
+            loss_smoothing_beta: loss smoothing factor. Range: [0, 1). Defaults: 0.05.
             diverge_th: max loss value after which training should be stopped. 
             device: device
+            non_blocking: (bool) Whether to have non-blocking transfer between device. 
         """
         if device is not None: self.device = device
         
@@ -239,6 +252,9 @@ class LRFinder:
         if train_loader is None: train_loader = self.train_loader
         assert train_loader is not None
         iterator = iter(train_loader)
+
+        if val_loader is None: val_loader = self.val_loader
+        if val_loader is not None: val_iter = iter(val_loader)
         
         for each_iter in tqdm(range(num_iter)):
             try: data, target = next(iterator)
@@ -246,17 +262,19 @@ class LRFinder:
                 iterator = iter(train_loader)
                 data, target = next(iterator)
                 
-            loss = self._train_batch(data, target.to(torch.float32))
+            loss = self._train_batch(data, target.to(torch.float32), non_blocking=non_blocking)
+            if val_iter: val_loss = self._validate(val_iter, non_blocking=non_blocking)
             
             # Update learning rate
-            lr_scheduler.step()
             self.history["lr"].append(lr_scheduler.get_lr()[0])
+            lr_scheduler.step()
             
             # Track best loss and smooth if loss_smoothing_beta is specified.
             if each_iter == 0: self.best_loss = loss
             else:
                 next(self.smoothener)
-                self.best_loss = self.smoothener.send(loss)
+                # self.best_loss = self.smoothener.send(loss)
+                self.best_loss = self.smoothener.send((loss, self.history["losses"][-1]))
                 if loss < self.best_loss: self.best_loss = loss
                     
             # Check if loss diverged. If it does, stop the test.
@@ -273,9 +291,10 @@ class LRFinder:
         
         return steepest, model, self.best_loss
         
-    def _train_batch(self, data, target):
+    def _train_batch(self, data, target, non_blocking=True):
         self.model.train()  # training mode
-        data, target = data.to(self.device), target.to(self.device)
+        data = data.to(self.device, non_blocking=non_blocking)
+        target = target.to(self.device, non_blocking=non_blocking)
         
         # Forward pass
         self.opt.zero_grad()
@@ -299,11 +318,30 @@ class LRFinder:
         plt.ylabel("Losses")
         plt.grid()
         plt.show()
+
+    def _validate(self, val_iter, non_blocking=True):
+        running_loss = 0
+        self.model.eval()
+        
+        with torch.no_grad():
+            for data, target in val_iter:
+                data = data.to(self.device, non_blocking=True)
+                target = target.to(self.device, non_blocking=True)
+
+                output = self.model(data)
+                loss = self.criterion(output, target)
+                running_loss += loss.item() * len(target)
+
+        return running_loss / len(val_iter.dataset)
     
-    def steepest_lr(self):
+    def steepest_lr(self, skip_end=5):
         losses = np.array(self.history["losses"])
         lr = np.array(self.history["lr"])
-        return lr[np.argmax(losses[:-1] - losses[1:])]
+        if skip_end != 0: losses, lr = losses[:-skip_end], lr[:-skip_end]
+
+        # Suggest learning rate:
+        return lr[(np.gradient(losses)).argmin()]
+        # return lr[np.argmax(losses[:-1] - losses[1:])]
 
 # %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:52:31.990760Z","iopub.execute_input":"2021-08-13T07:52:31.991354Z","iopub.status.idle":"2021-08-13T07:52:31.996891Z","shell.execute_reply.started":"2021-08-13T07:52:31.991293Z","shell.execute_reply":"2021-08-13T07:52:31.996033Z"}}
 def lr_finder(model, opt, criterion, dls=None, train_loader=None, device=None):
