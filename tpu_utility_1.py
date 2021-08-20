@@ -263,7 +263,7 @@ class LRFinder:
                 data, target = next(iterator)
                 
             loss = self._train_batch(data, target.to(torch.float32), non_blocking=non_blocking)
-            if val_iter: val_loss = self._validate(val_iter, non_blocking=non_blocking)
+            if val_loader: val_loss = self._validate(val_iter, non_blocking=non_blocking)
             
             # Update learning rate
             self.history["lr"].append(lr_scheduler.get_lr()[0])
@@ -283,7 +283,8 @@ class LRFinder:
                 
                 
         clear_output()
-        print(f"Best loss: {self.best_loss}")
+        print(f"Best train loss: {self.best_loss}")
+        # print(f"Last val loss: {val_loss}")
         steepest = self.steepest_lr()
         print(f"Steepest point: {steepest}")
         self._plot(steepest=steepest)
