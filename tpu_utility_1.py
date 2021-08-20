@@ -286,8 +286,8 @@ class LRFinder:
         print(f"Best loss: {self.best_loss}")
         steepest = self.steepest_lr()
         print(f"Steepest point: {steepest}")
-        self._plot()
-        model = self.reset()
+        self._plot(steepest=steepest)
+        model = self.reset()  # used if model is saved. One haven't make this work, yet. 
         
         return steepest, model, self.best_loss
         
@@ -308,12 +308,15 @@ class LRFinder:
         
         return loss.item()
     
-    def _plot(self):
+    def _plot(self, steepest=None):
         losses = self.history["losses"]
         lr = self.history["lr"]
         
         plt.figure(dpi=120)
-        plt.semilogx(lr, losses)
+        plt.plot(lr, losses)
+        # plt.semilogx(lr, losses)
+        if steepest: plt.scatter(lr[steepest], losses[steepest], s=75, marker="o", color="red", zorder=3)
+        plt.xscale("log")
         plt.xlabel("Learning Rate")
         plt.ylabel("Losses")
         plt.grid()
