@@ -287,9 +287,9 @@ class LRFinder:
         clear_output()
         print(f"Best train loss: {self.best_loss}")
         # print(f"Last val loss: {val_loss}")
-        steepest = self.steepest_lr()
+        steepest, index = self.steepest_lr()
         print(f"Steepest point: {steepest}")
-        self._plot(steepest=steepest)
+        self._plot(steepest_index=index)
         model = self.reset()  # used if model is saved. One haven't make this work, yet. 
         
         return steepest, model, self.best_loss
@@ -311,14 +311,17 @@ class LRFinder:
         
         return loss.item()
     
-    def _plot(self, steepest=None):
+    def _plot(self, index=None):
+        """
+        index: index where steepest value lies. 
+        """
         losses = self.history["losses"]
         lr = self.history["lr"]
         
         plt.figure(dpi=120)
         plt.plot(lr, losses)
         # plt.semilogx(lr, losses)
-        if steepest: plt.scatter(lr[steepest], losses[steepest], s=75, marker="o", color="red", zorder=3)
+        if index: plt.scatter(lr[index], losses[index], s=75, marker="o", color="red", zorder=3)
         plt.xscale("log")
         plt.xlabel("Learning Rate")
         plt.ylabel("Losses")
@@ -346,7 +349,8 @@ class LRFinder:
         if skip_end != 0: losses, lr = losses[:-skip_end], lr[:-skip_end]
 
         # Suggest learning rate:
-        return lr[(np.gradient(losses)).argmin()]
+        index = (np.gradient(losses)).argmin()
+        return lr[index], index
         # return lr[np.argmax(losses[:-1] - losses[1:])]
 
 # %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:52:31.990760Z","iopub.execute_input":"2021-08-13T07:52:31.991354Z","iopub.status.idle":"2021-08-13T07:52:31.996891Z","shell.execute_reply.started":"2021-08-13T07:52:31.991293Z","shell.execute_reply":"2021-08-13T07:52:31.996033Z"}}
