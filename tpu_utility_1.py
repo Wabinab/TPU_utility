@@ -68,6 +68,7 @@ def distrib_dataloader(get_dataset, flags, cached=False):
     flags: (python dict): Requires: 
         "bs": (int) batch_size,
         "num_workers": (int) number of workers.
+    cached: Not yet implemented. 
     """
     serial_exec = xmp.MpSerialExecutor()
     
@@ -254,7 +255,8 @@ class LRFinder:
         iterator = iter(train_loader)
 
         if val_loader is None: val_loader = self.val_loader
-        if val_loader is not None: val_iter = iter(val_loader)
+        val_iter = iter(val_loader) if val_loader is not None else None
+
         
         for each_iter in tqdm(range(num_iter)):
             try: data, target = next(iterator)
