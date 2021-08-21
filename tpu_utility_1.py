@@ -289,7 +289,7 @@ class LRFinder:
         # print(f"Last val loss: {val_loss}")
         steepest, index = self.steepest_lr()
         print(f"Steepest point: {steepest}")
-        self._plot(steepest_index=index)
+        self._plot(index=index)
         model = self.reset()  # used if model is saved. One haven't make this work, yet. 
         
         return steepest, model, self.best_loss
