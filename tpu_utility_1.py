@@ -94,7 +94,7 @@ def train_cycle_distrib(dls, flags, train_loop_fn, val_loop_fn, device=None):
         xm.master_print(f"Finished training epoch {epoch}")
 
         para_loader = pl.ParallelLoader(dls["val"], [device])
-        returned_val = test_loop_fn(para_loader.per_device_loader(device))
+        returned_val = val_loop_fn(para_loader.per_device_loader(device))
         if flags["metrics_debug"]: xm.master_print(met.metrics_report(), flush=True)
         
     return returned_val
