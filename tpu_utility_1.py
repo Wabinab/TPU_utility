@@ -114,6 +114,34 @@ def cached_dataset(cache_train_loc=None, cache_val_loc=None):
     return train_ds, val_ds
 
 # %% [markdown]
+# ## Show one batch
+
+# %% [code]
+def show_one_batch(dls, nrows=2, ncols=4, aspect="auto"):
+    """
+    Show image of a single batch up to nrows * ncols images. 
+    Will raise error if nrows * ncols is larger than the number of batches. 
+    The title of each subplots are their labels (same as fastai). 
+    
+    Args:
+        dls: (python dict) Containing keys "train" and "test" corresponding to 
+            PyTorch DataLoader. Use `dataloader` function to get this. 
+        nrows: (int) matplotlib subplot args. 
+        ncols: (int) matplotlib subplot args. 
+        aspect: (str/others) matplotlib imshow args. 
+    For matplotlib args, check matplotlib respective docs for what is supported. 
+    """
+    for data, target in dls["train"]: break
+    
+    count = 0
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
+    for row in range(nrows):
+        for col in range(ncols):
+            ax[row, col].imshow(data[count].permute(1, 2, 0), aspect=aspect)
+            ax[row, col].axis("off")
+            ax[row, col].title.set_text(target[count])
+
+# %% [markdown]
 # # LR Finder TPU
 
 # %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:32:03.793573Z","iopub.execute_input":"2021-08-13T07:32:03.793988Z","iopub.status.idle":"2021-08-13T07:32:03.807096Z","shell.execute_reply.started":"2021-08-13T07:32:03.793949Z","shell.execute_reply":"2021-08-13T07:32:03.805659Z"}}
