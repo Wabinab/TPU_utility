@@ -1,4 +1,4 @@
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:30:54.407515Z","iopub.execute_input":"2021-08-13T07:30:54.407964Z","iopub.status.idle":"2021-08-13T07:30:54.418185Z","shell.execute_reply.started":"2021-08-13T07:30:54.407874Z","shell.execute_reply":"2021-08-13T07:30:54.417044Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:56:43.862555Z","iopub.execute_input":"2021-08-25T05:56:43.863001Z","iopub.status.idle":"2021-08-25T05:56:43.875244Z","shell.execute_reply.started":"2021-08-25T05:56:43.862917Z","shell.execute_reply":"2021-08-25T05:56:43.874047Z"}}
 def setup_kaggle():
     os.system("curl https://raw.githubusercontent.com/pytorch/xla/master/contrib/scripts/env-setup.py -o pytorch-xla-env-setup.py")
     print("Download complete")
@@ -7,14 +7,14 @@ def setup_kaggle():
     
     clear_output()
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:30:54.419785Z","iopub.execute_input":"2021-08-13T07:30:54.420081Z","iopub.status.idle":"2021-08-13T07:32:03.078556Z","shell.execute_reply.started":"2021-08-13T07:30:54.420055Z","shell.execute_reply":"2021-08-13T07:32:03.077446Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:56:43.877682Z","iopub.execute_input":"2021-08-25T05:56:43.878075Z","iopub.status.idle":"2021-08-25T05:58:01.695632Z","shell.execute_reply.started":"2021-08-25T05:56:43.878040Z","shell.execute_reply":"2021-08-25T05:58:01.694297Z"}}
 import os
 from IPython.display import clear_output
 
 try: import torch_xla
 except Exception: setup_kaggle()
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T08:25:16.666039Z","iopub.execute_input":"2021-08-13T08:25:16.666464Z","iopub.status.idle":"2021-08-13T08:25:17.674989Z","shell.execute_reply.started":"2021-08-13T08:25:16.666429Z","shell.execute_reply":"2021-08-13T08:25:17.674029Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:01.697697Z","iopub.execute_input":"2021-08-25T05:58:01.698083Z","iopub.status.idle":"2021-08-25T05:58:03.377702Z","shell.execute_reply.started":"2021-08-25T05:58:01.698048Z","shell.execute_reply":"2021-08-25T05:58:03.376787Z"}}
 import copy
 import numpy as np 
 import pandas as pd 
@@ -38,7 +38,7 @@ from tqdm.auto import tqdm
 
 from sklearn.metrics import f1_score
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:32:03.740759Z","iopub.execute_input":"2021-08-13T07:32:03.741070Z","iopub.status.idle":"2021-08-13T07:32:03.755591Z","shell.execute_reply.started":"2021-08-13T07:32:03.741041Z","shell.execute_reply":"2021-08-13T07:32:03.754013Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.379271Z","iopub.execute_input":"2021-08-25T05:58:03.379563Z","iopub.status.idle":"2021-08-25T05:58:03.388903Z","shell.execute_reply.started":"2021-08-25T05:58:03.379535Z","shell.execute_reply":"2021-08-25T05:58:03.387263Z"}}
 def dataloader(train_ds, val_ds, flags, distributed=False):
     """
     flags requirement: (python dict)
@@ -61,7 +61,7 @@ def dataloader(train_ds, val_ds, flags, distributed=False):
     
     return {"train": train_loader, "val": val_loader}
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:32:03.756846Z","iopub.execute_input":"2021-08-13T07:32:03.757120Z","iopub.status.idle":"2021-08-13T07:32:03.767000Z","shell.execute_reply.started":"2021-08-13T07:32:03.757095Z","shell.execute_reply":"2021-08-13T07:32:03.766009Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.390186Z","iopub.execute_input":"2021-08-25T05:58:03.390486Z","iopub.status.idle":"2021-08-25T05:58:03.408775Z","shell.execute_reply.started":"2021-08-25T05:58:03.390457Z","shell.execute_reply":"2021-08-25T05:58:03.407563Z"}}
 def distrib_dataloader(get_dataset, flags, cached=False):
     """
     get_dataset: (function) The function that returns train_ds, val_ds as tuple. 
@@ -76,7 +76,7 @@ def distrib_dataloader(get_dataset, flags, cached=False):
     dls = dataloader(train_ds, val_ds, flags, distributed=True)
     return dls
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:32:03.768730Z","iopub.execute_input":"2021-08-13T07:32:03.769260Z","iopub.status.idle":"2021-08-13T07:32:03.781067Z","shell.execute_reply.started":"2021-08-13T07:32:03.769218Z","shell.execute_reply":"2021-08-13T07:32:03.780241Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.410078Z","iopub.execute_input":"2021-08-25T05:58:03.410580Z","iopub.status.idle":"2021-08-25T05:58:03.421279Z","shell.execute_reply.started":"2021-08-25T05:58:03.410544Z","shell.execute_reply":"2021-08-25T05:58:03.420437Z"}}
 def train_cycle_distrib(dls, flags, train_loop_fn, val_loop_fn, device=None):
     """
     dls: dataloaders, use distrib_dataloader() to get this. 
@@ -99,7 +99,7 @@ def train_cycle_distrib(dls, flags, train_loop_fn, val_loop_fn, device=None):
         
     return returned_val
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:32:03.782583Z","iopub.execute_input":"2021-08-13T07:32:03.783117Z","iopub.status.idle":"2021-08-13T07:32:03.791108Z","shell.execute_reply.started":"2021-08-13T07:32:03.783077Z","shell.execute_reply":"2021-08-13T07:32:03.790281Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.422940Z","iopub.execute_input":"2021-08-25T05:58:03.423371Z","iopub.status.idle":"2021-08-25T05:58:03.439128Z","shell.execute_reply.started":"2021-08-25T05:58:03.423341Z","shell.execute_reply":"2021-08-25T05:58:03.438030Z"}}
 def cached_dataset(cache_train_loc=None, cache_val_loc=None):
     """
     NOTE: This SHOULD BE CALLED inside the `_mp_fn` function of distributed. 
@@ -116,7 +116,7 @@ def cached_dataset(cache_train_loc=None, cache_val_loc=None):
 # %% [markdown]
 # ## Show one batch
 
-# %% [code]
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.440365Z","iopub.execute_input":"2021-08-25T05:58:03.440666Z","iopub.status.idle":"2021-08-25T05:58:03.451694Z","shell.execute_reply.started":"2021-08-25T05:58:03.440634Z","shell.execute_reply":"2021-08-25T05:58:03.450924Z"}}
 def show_one_batch(dls, nrows=2, ncols=4, aspect="auto"):
     """
     Show image of a single batch up to nrows * ncols images. 
@@ -140,11 +140,12 @@ def show_one_batch(dls, nrows=2, ncols=4, aspect="auto"):
             ax[row, col].imshow(data[count].permute(1, 2, 0), aspect=aspect)
             ax[row, col].axis("off")
             ax[row, col].title.set_text(target[count])
+            count += 1
 
 # %% [markdown]
 # # LR Finder TPU
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:32:03.793573Z","iopub.execute_input":"2021-08-13T07:32:03.793988Z","iopub.status.idle":"2021-08-13T07:32:03.807096Z","shell.execute_reply.started":"2021-08-13T07:32:03.793949Z","shell.execute_reply":"2021-08-13T07:32:03.805659Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.453140Z","iopub.execute_input":"2021-08-25T05:58:03.453784Z","iopub.status.idle":"2021-08-25T05:58:03.471632Z","shell.execute_reply.started":"2021-08-25T05:58:03.453717Z","shell.execute_reply":"2021-08-25T05:58:03.470572Z"}}
 class LinearScheduler(lr_scheduler._LRScheduler):
     """
     Linearly increases lr between two boundaries over a number of iterations. 
@@ -194,7 +195,7 @@ class CosineScheduler(lr_scheduler._LRScheduler):
 # Originally taken from https://nbviewer.jupyter.org/github/aman5319/Multi-Label/blob/master/Classify_scenes.ipynb
 # Some information are gotten from https://github.com/davidtvs/pytorch-lr-finder/blob/master/torch_lr_finder/lr_finder.py
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:51:49.119992Z","iopub.execute_input":"2021-08-13T07:51:49.120494Z","iopub.status.idle":"2021-08-13T07:51:49.145708Z","shell.execute_reply.started":"2021-08-13T07:51:49.120439Z","shell.execute_reply":"2021-08-13T07:51:49.144652Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.475507Z","iopub.execute_input":"2021-08-25T05:58:03.475876Z","iopub.status.idle":"2021-08-25T05:58:03.619021Z","shell.execute_reply.started":"2021-08-25T05:58:03.475841Z","shell.execute_reply":"2021-08-25T05:58:03.617924Z"}}
 class LRFinder:
     
     def __init__(self, model, opt, criterion, train_loader=None, val_loader=None,
@@ -381,7 +382,7 @@ class LRFinder:
         return lr[index], index
         # return lr[np.argmax(losses[:-1] - losses[1:])]
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:52:31.990760Z","iopub.execute_input":"2021-08-13T07:52:31.991354Z","iopub.status.idle":"2021-08-13T07:52:31.996891Z","shell.execute_reply.started":"2021-08-13T07:52:31.991293Z","shell.execute_reply":"2021-08-13T07:52:31.996033Z"}}
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T06:04:09.838292Z","iopub.execute_input":"2021-08-25T06:04:09.838826Z","iopub.status.idle":"2021-08-25T06:04:09.845127Z","shell.execute_reply.started":"2021-08-25T06:04:09.838793Z","shell.execute_reply":"2021-08-25T06:04:09.844020Z"}}
 def lr_finder(model, opt, criterion, dls=None, train_loader=None, device=None):
     """
     Learning Rate Finder with default values. 
@@ -398,10 +399,36 @@ def lr_finder(model, opt, criterion, dls=None, train_loader=None, device=None):
     if dls is train_loader is None: raise ValueError("One of dls or train_loader must be passed.")
     return lrfinder.lr_find(dls["train"] if dls else train_loader)
 
+# %% [code] {"jupyter":{"outputs_hidden":false}}
+def distrib_lr_finder(model, opt, criterion, dls=None, train_loader=None, device=None):
+    """
+    Learning Rate Finder with default values. 
+    Will use distributed method to allow definition of `xm.xla_device()` in training
+    without requiring restart of jupyter notebook. 
+    
+    :Args:
+        model: your model.
+        opt: torch.optim optimizers.
+        criterion: torch.nn loss function. 
+        dls: dataloaders. Check out `dataloader` function. Don't pass train_loader if this is used.
+        train_loader: PyTorch DataLoader. Using this if dls not detected. 
+        device: device.
+        
+    :return: (Nothing is returned)
+    """
+    def _mp_fn(index, model, opt, criterion, device):
+        lrfinder = LRFinder(model, opt, criterion, device=device)
+        if dls is train_loader is None: raise ValueError("One of dls or train_loader must be passed.")
+        steepest_point, model, best_loss = lrfinder.lr_find(dls["train"] if dls else train_loader)
+        if rank == 0: torch.save(model.state_dict(), "/kaggle/working/temp.pth")
+        # perhaps open text file to save steepest_point and/or best_loss? 
+        
+    xmp.spawn(_mp_fn, args=(model, opt, criterion, device,), start_method="fork", nprocs=1)
+
 # %% [markdown]
 # # One Cycle Policy
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:53:04.364632Z","iopub.execute_input":"2021-08-13T07:53:04.365059Z","iopub.status.idle":"2021-08-13T07:53:04.372010Z","shell.execute_reply.started":"2021-08-13T07:53:04.365022Z","shell.execute_reply":"2021-08-13T07:53:04.370905Z"}}
+# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:53:04.364632Z","iopub.execute_input":"2021-08-13T07:53:04.365059Z","iopub.status.idle":"2021-08-13T07:53:04.372010Z","shell.execute_reply.started":"2021-08-13T07:53:04.365022Z","shell.execute_reply":"2021-08-13T07:53:04.370905Z"},"jupyter":{"outputs_hidden":false}}
 class Stepper():
     """Step through n_iter on a schedule defined by func."""
     def __init__(self, val, n_iter: int, func):
@@ -420,7 +447,7 @@ class Stepper():
         """Return True if schedule complted."""
         return self.n >= self.n_iter
 
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:53:08.882115Z","iopub.execute_input":"2021-08-13T07:53:08.882454Z","iopub.status.idle":"2021-08-13T07:53:08.888884Z","shell.execute_reply.started":"2021-08-13T07:53:08.882424Z","shell.execute_reply":"2021-08-13T07:53:08.887981Z"}}
+# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:53:08.882115Z","iopub.execute_input":"2021-08-13T07:53:08.882454Z","iopub.status.idle":"2021-08-13T07:53:08.888884Z","shell.execute_reply.started":"2021-08-13T07:53:08.882424Z","shell.execute_reply":"2021-08-13T07:53:08.887981Z"},"jupyter":{"outputs_hidden":false}}
 def annealing_no(start, end, pct):
     """No annealing, always return 'start'."""
     return start
@@ -441,12 +468,59 @@ def annealing_cos(start, end, pct):
     cos_out = np.cos(np.pi * pct) + 1
     return end + (start - end) / 2 * cos_out
 
+# %% [markdown]
+# `train_tpu` normalize function gotten from https://github.com/albumentations-team/albumentations/blob/300ee99386ad27f482387047dac4f6dddff11ac2/albumentations/augmentations/functional.py#L131
+# 
+# Requires to write some test cases for `normalize_fn()` next time. 
+
 # %% [code]
+def normalize_fn(data=None, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), 
+              max_pixel=255, return_mean_std=True, calculated_input=False):
+    """
+    Normalize image function. 
+    
+    :input requirement: (PyTorch Tensor) of shape (Batch, channel, height, width)
+    
+    :args:
+        :data: (The input)
+        :mean: (int/tuple) If int, will be broadcasted in the channel dimension. 
+            If tuple, must have same number of values as number of channels. 
+            Mean of values. 
+        :std: (int/tuple) Check mean for explanation. Standard deviation of values. 
+        :max_pixel: This is the max pixel values. Default: 255 (so image are from 0-255).
+        :return_mean_std: (bool) Whether to just return the mean and std. If this is True,
+            no data passing in is required. Defaults: True.
+        :calculated input: (bool) Whether the input are already calculated, as in 
+            they are tensors to be used directly with the correct shape. 
+        
+    :return: 
+        (return_mean_std=False) normalized data, same shape as input. 
+        (return_mean_std=True) mean, std
+    """
+    if not calculated_input: 
+        if type(mean) == int: mean = [mean]
+        if type(std) == int: std = [std]
+
+        mean = np.array(mean) * max_pixel
+        std = np.array(std) * max_pixel
+
+        mean = torch.from_numpy(mean).view(1, mean.shape[0], 1, 1).type(torch.float32)
+        std = torch.from_numpy(std).view(1, std.shape[0], 1, 1).type(torch.float32)
+        
+    if return_mean_std: return mean, std
+    
+    assert data != None
+    assert type(mean) == torch.Tensor
+    assert type(std) == torch.Tensor
+    return (data - mean.to(data.device)) / std.to(data.device)
+
+# %% [code] {"jupyter":{"outputs_hidden":false}}
 class OneCyclePolicy_TPU:
     def __init__(self, model, opt, criterion, FLAGS, num_iter=None, train_ds=None,
                  momentum=(0.95, 0.85), div_factor=25, pct_start=0.4,
                 # train_transform=None, val_transform=None, 
-                channels_last=True, get_dataset=None, cache_train_loc=None, cache_val_loc=None):
+                channels_last=True, get_dataset=None,
+                cache_train_loc=None, cache_val_loc=None):
         """
         :args:
         
@@ -465,6 +539,7 @@ class OneCyclePolicy_TPU:
         channels_last: (bool) Whether to have NHWC instead of NCHW format. 
         get_dataset: (python function). Should returns train_ds, val_ds. Required if 
             you don't define cache_train_loc and cache_val_loc. 
+        
         """
         self.SERIAL_EXEC = xmp.MpSerialExecutor()
         self.WRAPPED_MODEL = xmp.MpModelWrapper(model)
@@ -490,14 +565,14 @@ class OneCyclePolicy_TPU:
         a2 = n - a1
         self.phases = ((a1, annealing_linear), (a2, annealing_cos))
         
+        self.div_factor = div_factor
+        self.momentum = momentum
+        
         max_lr = self.flags["lr"] * xm.xrt_world_size()
         min_lr = max_lr / self.div_factor
         self.lr_scheds = self.steps((min_lr, max_lr), (max_lr, min_lr / 1e4))
         self.mom_scheds = self.steps(self.momentum, self.momentum[::-1])
         self.update_lr_mom(self.lr_scheds[0].start, self.mom_scheds[0].start)
-        
-        self.div_factor = div_factor
-        self.momentum = momentum
 
         # Future development
         self.train_transform = train_transform
@@ -509,8 +584,11 @@ class OneCyclePolicy_TPU:
                for (step, (n_iter, func)) in zip(steps, self.phases)]
     
     def lrfinder(self, model, train_loader):
+        if not xm.is_master_ordinal(): xm.rendezvous("lrfinder_once")
         lrfinder = LRFinder(model, self.opt, self.criterion, train_loader=train_loader)
         steepest, _, best_loss = lrfinder.lr_find()
+        if xm.is_master_ordinal(): xm.rendezvous("lrfinder_once")
+        
         max_lr = steepest * xm.xrt_world_size()
         min_lr = max_lr / self.div_factor
         self.lr_scheds = self.steps((min_lr, max_lr), (max_lr, min_lr / 1e4))
@@ -526,10 +604,15 @@ class OneCyclePolicy_TPU:
             elif isinstance(self.opt, torch.optim.SGD):
                 l["momentum"] = mom
     
-    def train_tpu(self, train_ds, val_ds, fixed_lr=True):
+    def train_tpu(self, train_ds, val_ds, fixed_lr=True, normalize=False, average=None):
         """
         :args fixed_lr: (bool) Whether to use a fixed_lr defined in FLAGS. 
             Defaults: True. 
+        :args normalize: (bool/set of values) Whether to normalize the dataset 
+            based on imagenet values. If passing in set of values, pass in as
+            ((0.485, 0.456, 0.406), (0.229, 0.224, 0.225), 255) for example, 
+            corresponding to (mean, std, max_pixel) respectively. 
+        :args average: (str/None) f1_score arguments on average. 
         """
         torch.manual_seed(self.flags["seed"])
         
@@ -538,6 +621,7 @@ class OneCyclePolicy_TPU:
         
         device = xm.xla_device()
         model = self.WRAPPED_MODEL.to(device)
+        
         
         if not fixed_lr: self.SERIAL_EXEC.run(lambda: self.lrfinder(model, dls["train"]))
         
@@ -598,18 +682,22 @@ class OneCyclePolicy_TPU:
 # #                 Val F1Score: {epoch_f1score} | 
 # #             """, flush=True)
 #             return epoch_loss, epoch_f1score, data, preds, target
+
+        mean, std = normalize_fn() if normalize else (None, None)
+        if mean: mean, std = mean.to(device), std.to(device)
         
         for epoch in range(1, self.flags["num_epochs"] + 1):
             para_loader = pl.ParallelLoader(dls["train"], [device])
             running_loss, total_samples = self.train_loop_fn(
-                                    para_loader.per_device_loader(device), model)
+                                    para_loader.per_device_loader(device), model, mean, std)
             clear_output(wait=True)
             xm.master_print(f"Finished training epoch {epoch}")
             xm.master_print(f"Train loss: {running_loss / total_samples}", flush=True)
             
             para_loader = pl.ParallelLoader(dls["val"], [device])
             test_loss, f1score, data, pred, targ = self.test_loop_fn(
-                                    para_loader.per_device_loader(device), model)
+                                    para_loader.per_device_loader(device), model, average,
+                                    mean, std)
             xm.master_print(f"""
                 Val loss: {test_loss} | 
                 Val F1Score: {f1score} | 
@@ -634,7 +722,7 @@ class OneCyclePolicy_TPU:
         gc.collect()
         xmp.spawn(self._mp_fn, args=(), nprocs=self.flags["num_cores"], start_method="fork")
 
-    def train_loop_fn(self, loader, model):
+    def train_loop_fn(self, loader, model, mean, std):
         tracker = xm.RateTracker()
         model.train()
         
@@ -644,6 +732,7 @@ class OneCyclePolicy_TPU:
         for data, target in tqdm(loader):
             self.opt.zero_grad()
             data, target = data.to(device), target.to(device)
+            if mean: data = (data - mean) / std
             if self.chls: data = data.to(memory_format=torch.channels_last)
             
             output = model(data)
@@ -663,13 +752,15 @@ class OneCyclePolicy_TPU:
 
         return running_loss, total_samples
 
-    def test_loop_fn(self, loader, model):
+    def test_loop_fn(self, loader, model, average, mean, std):
         total_samples = 0
         running_loss, f1Score = 0.0, 0.0
         model.eval()
         
         for data, target in tqdm(loader):
             data, target = data.to(device), target.to(device)
+            if mean: data = (data - mean) / std
+            if self.chls: data = data.to(memory_format=torch.channels_last)
             
             output = model(data)
             loss = self.criterion(output, target.to(torch.float32))
@@ -681,7 +772,7 @@ class OneCyclePolicy_TPU:
             target = target.cpu().to(torch.int).numpy()
             preds = preds.cpu().to(torch.int).numpy()
             
-            f1Score += f1_score(target, preds, average="weighted") * data.size(0)
+            f1Score += f1_score(target, preds, average=average) * data.size(0)
             
         epoch_loss = running_loss / total_samples
         epoch_f1score = f1Score / total_samples
@@ -691,9 +782,8 @@ class OneCyclePolicy_TPU:
 #                 Val F1Score: {epoch_f1score} | 
 #             """, flush=True)
         return epoch_loss, epoch_f1score, data, preds, target
-            
 
 # %% [markdown]
 # `weighted` can result in F-score **that is not between precision and recall**. URL: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 
-# %% [code]
+# %% [code] {"jupyter":{"outputs_hidden":false}}
