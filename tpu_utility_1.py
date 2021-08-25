@@ -471,7 +471,7 @@ def annealing_cos(start, end, pct):
 # %% [markdown]
 # `train_tpu` normalize function gotten from https://github.com/albumentations-team/albumentations/blob/300ee99386ad27f482387047dac4f6dddff11ac2/albumentations/augmentations/functional.py#L131
 # 
-# Requires to write some test cases for `normalize_fn()` next time. 
+# Requires to write some test cases for `normalize_fn()`. 
 
 # %% [code]
 def normalize_fn(data=None, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), 
@@ -575,8 +575,8 @@ class OneCyclePolicy_TPU:
         self.update_lr_mom(self.lr_scheds[0].start, self.mom_scheds[0].start)
 
         # Future development
-        self.train_transform = train_transform
-        self.val_transform = val_transform
+#         self.train_transform = train_transform
+#         self.val_transform = val_transform
         
     def steps(self, *steps):
         """Build anneal schedule for all of the parameters. """
@@ -706,7 +706,7 @@ class OneCyclePolicy_TPU:
                 
         return test_loss, f1score, data, pred, targ, model
     
-    def _mp_fn(self, rank):
+    def _mp_fn(self, rank, normalize):
         flags = self.flags
         torch.set_default_tensor_type(torch.FloatTensor)
         
@@ -714,13 +714,13 @@ class OneCyclePolicy_TPU:
             train_ds, val_ds = cached_dataset(self.cache_train_loc, self.cache_val_loc)
         else: train_ds, val_ds = None, None
             
-        loss, f1score, data, pred, targ, model = self.train_tpu(train_ds, val_ds)
+        loss, f1score, data, pred, targ, model = self.train_tpu(train_ds, val_ds, normalize=normalize)
         if rank == 0: torch.save(model.state_dict(), self.flags["save_path"])
             
-    def train(self):
+    def train(self, normalize=False):
         import gc
         gc.collect()
-        xmp.spawn(self._mp_fn, args=(), nprocs=self.flags["num_cores"], start_method="fork")
+        xmp.spawn(self._mp_fn, args=(normalize, ), nprocs=self.flags["num_cores"], start_method="fork")
 
     def train_loop_fn(self, loader, model, mean, std):
         tracker = xm.RateTracker()
