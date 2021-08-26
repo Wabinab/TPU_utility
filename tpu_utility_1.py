@@ -427,6 +427,7 @@ def distrib_lr_finder(model, opt, criterion, dls=None, train_loader=None, device
 
 # %% [markdown]
 # # One Cycle Policy
+# Taken from https://nbviewer.jupyter.org/github/aman5319/Multi-Label/blob/master/Classify_scenes.ipynb
 
 # %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:53:04.364632Z","iopub.execute_input":"2021-08-13T07:53:04.365059Z","iopub.status.idle":"2021-08-13T07:53:04.372010Z","shell.execute_reply.started":"2021-08-13T07:53:04.365022Z","shell.execute_reply":"2021-08-13T07:53:04.370905Z"},"jupyter":{"outputs_hidden":false}}
 class Stepper():
@@ -471,9 +472,9 @@ def annealing_cos(start, end, pct):
 # %% [markdown]
 # `train_tpu` normalize function gotten from https://github.com/albumentations-team/albumentations/blob/300ee99386ad27f482387047dac4f6dddff11ac2/albumentations/augmentations/functional.py#L131
 # 
-# Requires to write some test cases for `normalize_fn()`. 
+# Requires to write some test cases for `normalize_fn()`.
 
-# %% [code]
+# %% [code] {"jupyter":{"outputs_hidden":false}}
 def normalize_fn(data=None, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), 
               max_pixel=255, return_mean_std=True, calculated_input=False):
     """
@@ -567,6 +568,7 @@ class OneCyclePolicy_TPU:
         
         self.div_factor = div_factor
         self.momentum = momentum
+        self.idx_s = 0
         
         max_lr = self.flags["lr"] * xm.xrt_world_size()
         min_lr = max_lr / self.div_factor
@@ -684,7 +686,7 @@ class OneCyclePolicy_TPU:
 #             return epoch_loss, epoch_f1score, data, preds, target
 
         mean, std = normalize_fn() if normalize else (None, None)
-        if mean: mean, std = mean.to(device), std.to(device)
+#         if mean is not None: mean, std = mean.to(device), std.to(device)
         
         for epoch in range(1, self.flags["num_epochs"] + 1):
             para_loader = pl.ParallelLoader(dls["train"], [device])
@@ -729,10 +731,14 @@ class OneCyclePolicy_TPU:
         running_loss = 0.0
         total_samples = 0
         
+        # get one batch and put onto same device. Alternatively can put in loop. 
+        for data, target in loader: break  
+        if mean is not None: mean, std = mean.to(data.device), std.to(data.device)
+        
         for data, target in tqdm(loader):
             self.opt.zero_grad()
-            data, target = data.to(device), target.to(device)
-            if mean: data = (data - mean) / std
+#             data, target = data.to(device), target.to(device)
+            if mean is not None: data = (data - mean) / std
             if self.chls: data = data.to(memory_format=torch.channels_last)
             
             output = model(data)
@@ -757,9 +763,13 @@ class OneCyclePolicy_TPU:
         running_loss, f1Score = 0.0, 0.0
         model.eval()
         
+        # get one batch and put onto same device. Alternatively can put in loop. 
+        for data, target in loader: break
+        if mean is not None: mean, std = mean.to(data.device), std.to(data.device)
+        
         for data, target in tqdm(loader):
-            data, target = data.to(device), target.to(device)
-            if mean: data = (data - mean) / std
+#             data, target = data.to(device), target.to(device)
+            if mean is not None: data = (data - mean) / std
             if self.chls: data = data.to(memory_format=torch.channels_last)
             
             output = model(data)
@@ -786,4 +796,42 @@ class OneCyclePolicy_TPU:
 # %% [markdown]
 # `weighted` can result in F-score **that is not between precision and recall**. URL: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 
+# %% [markdown]
+# # Predict Batch
+# For batch prediction
+
 # %% [code] {"jupyter":{"outputs_hidden":false}}
+def predict_batch(model, dl_test, paths=None, normalize=False, device=None):
+    """
+    Batch prediction. 
+    File predicted will be according to how the data is input. It should be in the order 
+    of your input paths. 
+    :args: 
+        model (PyTorch model): state dict should already be loaded by yourself. 
+        dl_test: (PyTorch Dataloaders) Dataloaders containing test files. 
+        paths (Python List of PosixPaths/str): paths to test files. (currently not used)
+        normalize (bool/tuple): Whether to normalize data or not. If you want
+            True, please pass in tuple of mean and std for non-Imagenet normalization. 
+    :return: (Tensor) list of predictions in the order of paths. 
+    """
+    with torch.no_grad():
+        model = model.to(device)
+        model.eval()
+        if normalize == True: mean, std = normalize_fn()
+        elif type(normalize) == tuple: 
+            mean, std = normalize
+            normalize = True
+            
+        total = None
+        
+        for k, data in enumerate(tqdm(dl_test)):
+            if normalize: data = (data - mean) / std
+            output = model(data.to(device))
+            if total is None: total = copy.deepcopy(output.cpu())
+            else: total = torch.cat([total, output.cpu()], axis=0)
+            
+    return total
+
+# CHanges with multiprocessing: if the class to fetch data can return the idx, then we can 
+# use it to search back the filename based on the idx. Idx as integers can be collated together 
+# unlike file name whom are str/object. 
