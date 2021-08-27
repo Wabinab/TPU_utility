@@ -1,5 +1,5 @@
 # %% [code]
-from tpu_utility_1 import *
+from .tpu_utility_1 import *
 
 import torch_xla  # as a decoration here. 
 import torch_xla.core.xla_model as xm
