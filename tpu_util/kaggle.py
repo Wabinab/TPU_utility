@@ -14,5 +14,5 @@ from IPython.display import clear_output
 try: import torch_xla
 except Exception: setup_kaggle()
 
-from tpu_utility_1 import *
-from tpu_cache_ds_utils import *
+from .tpu_utility_1 import *
+from .tpu_cache_ds_utils import *

@@ -2,10 +2,11 @@ import setuptools
 
 setuptools.setup(
     name="tpu_util",
-    version=1,
+    version=0.7,
+    url="https://github.com/Wabinab/TPU_utility",
     description="TPU utility with PyTorch XLA",
     long_description=open("README.md").read(),
-    package=["tpu_util"],
+    packages=setuptools.find_packages(),
     install_requires= ["pip", "packaging"],
     python_requires=">=3.6",
 )
