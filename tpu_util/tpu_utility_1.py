@@ -1,19 +1,3 @@
-# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:56:43.862555Z","iopub.execute_input":"2021-08-25T05:56:43.863001Z","iopub.status.idle":"2021-08-25T05:56:43.875244Z","shell.execute_reply.started":"2021-08-25T05:56:43.862917Z","shell.execute_reply":"2021-08-25T05:56:43.874047Z"}}
-def setup_kaggle():
-    os.system("curl https://raw.githubusercontent.com/pytorch/xla/master/contrib/scripts/env-setup.py -o pytorch-xla-env-setup.py")
-    print("Download complete")
-    os.system("python pytorch-xla-env-setup.py --version 1.7 --apt-packages libomp5 libopenblas-dev")
-    print("Setup complete")
-    
-    clear_output()
-
-# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:56:43.877682Z","iopub.execute_input":"2021-08-25T05:56:43.878075Z","iopub.status.idle":"2021-08-25T05:58:01.695632Z","shell.execute_reply.started":"2021-08-25T05:56:43.878040Z","shell.execute_reply":"2021-08-25T05:58:01.694297Z"}}
-import os
-from IPython.display import clear_output
-
-try: import torch_xla
-except Exception: setup_kaggle()
-
 # %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:01.697697Z","iopub.execute_input":"2021-08-25T05:58:01.698083Z","iopub.status.idle":"2021-08-25T05:58:03.377702Z","shell.execute_reply.started":"2021-08-25T05:58:01.698048Z","shell.execute_reply":"2021-08-25T05:58:03.376787Z"}}
 import copy
 import numpy as np 
