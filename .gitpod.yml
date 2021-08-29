@@ -6,8 +6,8 @@ ports:
 tasks:
   - init: |
       npm install
-      sudo apt-get install libturbojpeg
     command: |
+        sudo apt-get install libturbojpeg
         python -m pip install --upgrade pip
         pip install -r requirements.txt
       
