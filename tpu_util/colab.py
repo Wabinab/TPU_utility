@@ -13,3 +13,4 @@ except Exception: setup_colab()
 from .tpu_utility_1 import *
 from .tpu_cache_ds_utils import *
 from .other_utils import *
+from ._lr_finder import *
