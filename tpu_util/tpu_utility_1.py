@@ -3,7 +3,7 @@ import copy
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt
-from IPYthon.display import clear_output
+from IPython.display import clear_output
 
 import torch_xla  # as a decoration here. 
 import torch_xla.core.xla_model as xm
