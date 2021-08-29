@@ -105,6 +105,7 @@ class LRFinder:
         else: self.device = device
             
         self.model.to(self.device)
+        if self.device.type == "xla": print("Using TPU")  # as an assertion
         
         self.history = {"lr": [], "losses": []}
         
@@ -136,7 +137,7 @@ class LRFinder:
 
             
     def lr_find(self, train_loader=None, val_loader=None, end_lr=10, num_iter=150, step_mode="exp", 
-               loss_smoothing_beta=0.05, diverge_th=5, device=None, non_blocking=True):
+               loss_smoothing_beta=0.05, diverge_th=5, non_blocking=True):
         """
         Performs LR Find test
         
@@ -147,11 +148,8 @@ class LRFinder:
             step_mode: anneal function. Default 'exp'. Choices 'linear', 'cos'. 
             loss_smoothing_beta: loss smoothing factor. Range: [0, 1). Defaults: 0.05.
             diverge_th: max loss value after which training should be stopped. 
-            device: device
             non_blocking: (bool) Whether to have non-blocking transfer between device. 
         """
-        if device is not None: self.device = device
-        
         # Reset test results
         self.history = {"lr": [], "losses": []}
         self.best_loss = None
