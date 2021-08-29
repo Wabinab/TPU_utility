@@ -12,3 +12,4 @@ jpeg4py
 pytest
 pytest-cov
 ipython
+wheel
