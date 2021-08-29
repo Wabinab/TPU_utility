@@ -12,6 +12,7 @@ from tqdm.autonotebook import tqdm
 from torch.optim.lr_scheduler import _LRScheduler
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
+from IPython.display import clear_output
 
 from packaging import version
 
@@ -531,9 +532,10 @@ class LRFinder(object):
         else:
             return ax
 
-    def lrfind(self, trainloader):
+    def lr_find(self, trainloader):
         """Default of lr finder"""
         self.range_test(trainloader, end_lr=100, num_iter=100)
+        clear_output(wait=True)
         self.plot()
         self.reset()
 

@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="tpu_util",
-    version="0.1.0",
+    version="0.1.2",
     url="https://github.com/Wabinab/TPU_utility",
     description="TPU utility with PyTorch XLA",
     long_description=open("README.md").read(),
