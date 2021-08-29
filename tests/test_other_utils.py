@@ -138,6 +138,16 @@ def get_dataset():
     return train_ds, val_ds
 
 
+model = models.resnet50(pretrained=True)
+num_features = model.fc.in_features
+for param in model.parameters(): param.requires_grad_(False)
+model.fc = nn.Linear(num_features, 1)  
+# actually requires sigmoid but we're not using model here so ignore. 
+
+criterion = nn.BCEWithLogitsLoss()
+opt = torch.optim.Adam(model.parameters(), lr=FLAGS["lr"])
+
+
 ### ---------------------------------------------------- ###
 ### Starting test case ###
 ### ---------------------------------------------------- ###
@@ -184,3 +194,43 @@ def test_dataloader_no_exception_raise_calling_one_batch_test(call_dl):
     try:
         for one_batch in call_dl["test"]: break
     except Exception: pytest.fail("cannot call one batch")
+
+
+def test_linear_scheduler_correct_value():
+    steps = 10
+    lin_sched = LinearScheduler(opt, 10, steps)
+    all_lr = np.zeros((steps, ))
+
+    for k, i in enumerate(range(steps)):
+        all_lr[k] = lin_sched.get_lr()[0]
+        lin_sched.step()
+
+    assert (np.round(all_lr).astype(np.uint8) == np.arange(10) + 1).all()
+
+
+def test_exponential_scheduler_correct_value():
+    steps, end_lr = 10, 10
+    exp_sched = ExponentialScheduler(opt, end_lr, steps)
+    all_lr = np.zeros((steps, ))
+
+    comparable = np.array([FLAGS["lr"] * ((end_lr / FLAGS["lr"]) ** (pct / steps)) for pct in range(1, steps + 1)])
+
+    for k, i in enumerate(range(steps)):
+        all_lr[k] = exp_sched.get_lr()[0]
+        exp_sched.step()
+
+    assert (all_lr == comparable).all()
+
+
+def test_cosine_scheduler_correct_value():
+    steps, end_lr = 10, 10
+    cos_sched = CosineScheduler(opt, end_lr, steps)
+    all_lr = np.zeros((steps, ))
+
+    comparable = np.array([end_lr + (FLAGS["lr"] - end_lr) / 2 * (np.cos(np.pi * (pct / steps)) + 1) for pct in range(1, steps + 1)])
+
+    for k, i in enumerate(range(steps)):
+        all_lr[k] = cos_sched.get_lr()[0]
+        cos_sched.step()
+
+    assert (all_lr == comparable).all()

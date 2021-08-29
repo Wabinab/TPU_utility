@@ -1,0 +1,1 @@
+There is a colab test file for using TPU [here](https://colab.research.google.com/drive/1o2mMyAYy-ZRwivjjkjaXocNHF7ZpQeNB?usp=sharing)

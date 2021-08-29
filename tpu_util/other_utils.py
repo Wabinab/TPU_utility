@@ -31,6 +31,7 @@ def dataloader(train_ds, val_ds, flags, test_ds=None, distributed=False):
         If True: requires test_ds to be defined. 
     """
     if distributed:
+        import torch_xla.core.xla_model as xm
         train_sampler = D.distributed.DistributedSampler(
             train_ds, num_replicas=xm.xrt_world_size(),
             rank=xm.get_ordinal(), shuffle=True)
@@ -79,3 +80,51 @@ def show_one_batch(dls, nrows=2, ncols=4, aspect=None):
             ax[row, col].axis("off")
             ax[row, col].title.set_text(target[count])
             count += 1
+
+
+# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.453140Z","iopub.execute_input":"2021-08-25T05:58:03.453784Z","iopub.status.idle":"2021-08-25T05:58:03.471632Z","shell.execute_reply.started":"2021-08-25T05:58:03.453717Z","shell.execute_reply":"2021-08-25T05:58:03.470572Z"}}
+class LinearScheduler(lr_scheduler._LRScheduler):
+    """
+    Linearly increases lr between two boundaries over a number of iterations. 
+    """
+    def __init__(self, opt, end_lr, num_iter):  # original `optimizer`
+        self.end_lr = end_lr
+        self.num_iter = num_iter
+        super(LinearScheduler, self).__init__(opt)
+        
+    def get_lr(self):
+        """Formula: start + pct * (end - start)"""
+        curr_iter = self.last_epoch + 1
+        pct = curr_iter / self.num_iter  # ratio
+        return [base_lr + pct * (self.end_lr - base_lr) for base_lr in self.base_lrs]
+    
+    
+class ExponentialScheduler(lr_scheduler._LRScheduler):
+    """
+    Exponentially increases lr between two boundaries over a number of iterations. 
+    """
+    def __init__(self, opt, end_lr, num_iter, last_epoch = -1):
+        self.end_lr = end_lr
+        self.num_iter = num_iter
+        super(ExponentialScheduler, self).__init__(opt, last_epoch=last_epoch) ## 
+        
+    def get_lr(self):
+        curr_iter = self.last_epoch + 1
+        pct = curr_iter / self.num_iter
+        return [base_lr * (self.end_lr / base_lr) ** pct for base_lr in self.base_lrs]
+    
+    
+class CosineScheduler(lr_scheduler._LRScheduler):
+    """
+    Cosine increases lr between two boundaries over a number of iterations. 
+    """
+    def __init__(self, opt, end_lr, num_iter, last_epoch = -1):
+        self.end_lr = end_lr
+        self.num_iter = num_iter
+        super(CosineScheduler, self).__init__(opt, last_epoch=last_epoch) ## 
+        
+    def get_lr(self):
+        curr_iter = self.last_epoch + 1
+        pct = curr_iter / self.num_iter
+        cos_out = np.cos(np.pi * pct) + 1
+        return [self.end_lr + (base_lr - self.end_lr) / 2 * cos_out for base_lr in self.base_lrs]
