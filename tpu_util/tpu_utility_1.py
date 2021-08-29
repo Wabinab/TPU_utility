@@ -3,6 +3,7 @@ import copy
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt
+from IPYthon.display import clear_output
 
 import torch_xla  # as a decoration here. 
 import torch_xla.core.xla_model as xm
@@ -27,11 +28,14 @@ from .other_utils import *
 # %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.390186Z","iopub.execute_input":"2021-08-25T05:58:03.390486Z","iopub.status.idle":"2021-08-25T05:58:03.408775Z","shell.execute_reply.started":"2021-08-25T05:58:03.390457Z","shell.execute_reply":"2021-08-25T05:58:03.407563Z"}}
 def distrib_dataloader(get_dataset, flags, cached=False):
     """
+    Will run without test_ds available.
     get_dataset: (function) The function that returns train_ds, val_ds as tuple. 
     flags: (python dict): Requires: 
         "bs": (int) batch_size,
         "num_workers": (int) number of workers.
     cached: Not yet implemented. 
+
+    To assign test_ds, you can do dls["test"] = test_ds later on. 
     """
     serial_exec = xmp.MpSerialExecutor()
     
@@ -75,35 +79,6 @@ def cached_dataset(cache_train_loc=None, cache_val_loc=None):
     val_ds = xcd.CachedDataset(None, cache_val_loc)
     
     return train_ds, val_ds
-
-# %% [markdown]
-# ## Show one batch
-
-# %% [code] {"jupyter":{"outputs_hidden":false},"execution":{"iopub.status.busy":"2021-08-25T05:58:03.440365Z","iopub.execute_input":"2021-08-25T05:58:03.440666Z","iopub.status.idle":"2021-08-25T05:58:03.451694Z","shell.execute_reply.started":"2021-08-25T05:58:03.440634Z","shell.execute_reply":"2021-08-25T05:58:03.450924Z"}}
-def show_one_batch(dls, nrows=2, ncols=4, aspect="auto"):
-    """
-    Show image of a single batch up to nrows * ncols images. 
-    Will raise error if nrows * ncols is larger than the number of batches. 
-    The title of each subplots are their labels (same as fastai). 
-    
-    Args:
-        dls: (python dict) Containing keys "train" and "test" corresponding to 
-            PyTorch DataLoader. Use `dataloader` function to get this. 
-        nrows: (int) matplotlib subplot args. 
-        ncols: (int) matplotlib subplot args. 
-        aspect: (str/others) matplotlib imshow args. 
-    For matplotlib args, check matplotlib respective docs for what is supported. 
-    """
-    for data, target in dls["train"]: break
-    
-    count = 0
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols)
-    for row in range(nrows):
-        for col in range(ncols):
-            ax[row, col].imshow(data[count].permute(1, 2, 0), aspect=aspect)
-            ax[row, col].axis("off")
-            ax[row, col].title.set_text(target[count])
-            count += 1
 
 # %% [markdown]
 # # LR Finder TPU
@@ -282,7 +257,7 @@ class LRFinder:
         steepest, index = self.steepest_lr()
         print(f"Steepest point: {steepest}")
         self._plot(index=index)
-        model = self.reset()  # used if model is saved. One haven't make this work, yet. 
+        _ = self.reset()  # used if model is saved. One haven't make this work, yet. 
         
         return steepest, model, self.best_loss
         
