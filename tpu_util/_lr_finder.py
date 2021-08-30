@@ -17,6 +17,7 @@ from IPython.display import clear_output
 from packaging import version
 
 import torch_xla.core.xla_model as xm
+from .other_utils import normalize_fn
 
 PYTORCH_VERSION = version.parse(torch.__version__)
 
@@ -131,6 +132,14 @@ class LRFinder(object):
         cache_dir (string, optional): path for storing temporary files. If no path is
             specified, system-wide temporary directory is used. Notice that this
             parameter will be ignored if `memory_cache` is True.
+        barrier (bool, default True): barrier for TPU device. If not using multiprocessing
+            for TPU, set this to True. If using multiprocessing, set this to False. 
+        normalize (bool, default False): Whether or not to normalize data. This is same 
+            as doing normalize when transforming images, but inside TPU. This is subject
+            to change as it is expected to support other transformations on TPU in the 
+            future. Now, only normalization is supported on TPU while other transformations
+            should be done on CPU (PyTorch on CPU is 3x faster than on TPU, GPU is up to
+            1000x faster than on CPU). 
     Example:
         >>> lr_finder = LRFinder(net, optimizer, criterion, device="cuda")
         >>> lr_finder.range_test(dataloader, end_lr=100, num_iter=100)
@@ -149,6 +158,8 @@ class LRFinder(object):
         device=None,
         memory_cache=True,
         cache_dir=None,
+        barrier=True,
+        normalize=False
     ):
         # Check if the optimizer is already attached to a scheduler
         self.optimizer = optimizer
@@ -160,6 +171,16 @@ class LRFinder(object):
         self.best_loss = None
         self.memory_cache = memory_cache
         self.cache_dir = cache_dir
+        self.barrier = barrier
+        self.normalize = normalize
+
+        mean, std = None, None
+        if self.normalize: mean, std = normalize_fn()
+        if type(self.normalize) == tuple: 
+            mean, std, max_pixel = self.normalize
+            mean, std = normalize_fn(mean=mean, std=std, max_pixel=max_pixel)
+            self.normalize = True
+        self.mean, self.std = mean, std
 
         # Save the original state of the model and optimizer so they can be restored if
         # needed
@@ -180,6 +201,7 @@ class LRFinder(object):
         self.model.load_state_dict(self.state_cacher.retrieve("model"))
         self.optimizer.load_state_dict(self.state_cacher.retrieve("optimizer"))
         self.model.to(self.model_device)
+        return self.model, self.optimizer
 
     def range_test(
         self,
@@ -265,6 +287,7 @@ class LRFinder(object):
 
         # Move the model to the proper device
         self.model.to(self.device)
+        self.mean, self.std = self._move_to_device(self.mean, self.std, non_blocking=non_blocking_transfer)
 
         # Check if the optimizer is already attached to a scheduler
         self._check_for_scheduler()
@@ -368,6 +391,7 @@ class LRFinder(object):
             inputs, labels = self._move_to_device(
                 inputs, labels, non_blocking=non_blocking_transfer
             )
+            if self.normalize: inputs = (inputs - self.mean) / self.std
 
             # Forward pass
             outputs = self.model(inputs)
@@ -394,7 +418,7 @@ class LRFinder(object):
             else:
                 total_loss += loss
 
-        if self.device.type == "xla": xm.optimizer_step(self.optimizer, barrier=True)
+        if self.device.type == "xla": xm.optimizer_step(self.optimizer, barrier=self.barrier)
         else: self.optimizer.step()
 
         return total_loss.item()
@@ -532,12 +556,14 @@ class LRFinder(object):
         else:
             return ax
 
-    def lr_find(self, trainloader):
-        """Default of lr finder"""
-        self.range_test(trainloader, end_lr=100, num_iter=100)
+    def lr_find(self, trainloader, model=None, device=None):
+        """Default of lr finder grouped together for easy access"""
+        if model: self.model = model
+        if device: self.device = device
+        self.range_test(trainloader, start_lr=1e-8, end_lr=100, num_iter=150)
         clear_output(wait=True)
         self.plot()
-        self.reset()
+        return self.reset()
 
 
 class LinearLR(_LRScheduler):

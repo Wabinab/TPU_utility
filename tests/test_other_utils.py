@@ -234,3 +234,7 @@ def test_cosine_scheduler_correct_value():
         cos_sched.step()
 
     assert (all_lr == comparable).all()
+
+
+# normalize_fn
+def test_normalize_fn

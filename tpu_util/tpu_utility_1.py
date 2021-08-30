@@ -100,7 +100,7 @@ def lr_finder(model, opt, criterion, dls=None, train_loader=None, device=None):
     
     Return: steepest_point, model, best_loss
     """
-    lrfinder = LRFinder(model, opt, criterion, device=device)
+    lrfinder = LRFinder(model, opt, criterion, device=device, barrier=True)
     if dls is train_loader is None: raise ValueError("One of dls or train_loader must be passed.")
     return lrfinder.lr_find(dls["train"] if dls else train_loader)
 
@@ -121,14 +121,28 @@ def distrib_lr_finder(model, opt, criterion, dls=None, train_loader=None, device
         
     :return: (Nothing is returned)
     """
-    def _mp_fn(index, model, opt, criterion, device):
-        lrfinder = LRFinder(model, opt, criterion, device=device)
+    SERIAL_EXEC = xmp.MpSerialExecutor()
+    WRAPPED_MODEL = xmp.MpModelWrapper(model)
+
+    def train_fn(lrfinder, train_loader):
+        device = xm.xla_device()
+        model = WRAPPED_MODEL.to(device)
+        if not xm.is_master_ordinal(): xm.rendezvous("lrfind_only_once")
+        model, opt = SERIAL_EXEC.run(lambda: lrfinder.lr_find(train_loader, model=model, device=device))
+        if xm.is_master_ordinal(): xm.rendezvous("lrfind_only_once")
+        return model, opt
+
+    def _mp_fn(rank, model, opt, criterion, device):
+        lrfinder = LRFinder(model, opt, criterion, device=device, barrier=False)
         if dls is train_loader is None: raise ValueError("One of dls or train_loader must be passed.")
-        lrfinder.lr_find(dls["train"] if dls else train_loader)
-        # if rank == 0: torch.save(model.state_dict(), "/kaggle/working/temp.pth")
-        # perhaps open text file to save steepest_point and/or best_loss? 
+        model, opt = train_fn(lrfinder, dls["train"] if dls else train_loader)
+        if rank == 0: 
+            torch.save({
+                "model": model.cpu().state_dict(),
+                "opt": opt.cpu().state_dict(),
+            }, "/kaggle/working/temp.pth")
         
-    xmp.spawn(_mp_fn, args=(model, opt, criterion, device,), start_method="fork", nprocs=1)
+    xmp.spawn(_mp_fn, args=(WRAPPED_MODEL, opt, criterion, device,), start_method="fork", nprocs=8)
 
 # %% [markdown]
 # # One Cycle Policy
@@ -173,52 +187,6 @@ def annealing_cos(start, end, pct):
     """Cosine anneal from start and end as pct goes from 0.0 to 1.0."""
     cos_out = np.cos(np.pi * pct) + 1
     return end + (start - end) / 2 * cos_out
-
-# %% [markdown]
-# `train_tpu` normalize function gotten from https://github.com/albumentations-team/albumentations/blob/300ee99386ad27f482387047dac4f6dddff11ac2/albumentations/augmentations/functional.py#L131
-# 
-# Requires to write some test cases for `normalize_fn()`.
-
-# %% [code] {"jupyter":{"outputs_hidden":false}}
-def normalize_fn(data=None, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), 
-              max_pixel=255, return_mean_std=True, calculated_input=False):
-    """
-    Normalize image function. 
-    
-    :input requirement: (PyTorch Tensor) of shape (Batch, channel, height, width)
-    
-    :args:
-        :data: (The input)
-        :mean: (int/tuple) If int, will be broadcasted in the channel dimension. 
-            If tuple, must have same number of values as number of channels. 
-            Mean of values. 
-        :std: (int/tuple) Check mean for explanation. Standard deviation of values. 
-        :max_pixel: This is the max pixel values. Default: 255 (so image are from 0-255).
-        :return_mean_std: (bool) Whether to just return the mean and std. If this is True,
-            no data passing in is required. Defaults: True.
-        :calculated input: (bool) Whether the input are already calculated, as in 
-            they are tensors to be used directly with the correct shape. 
-        
-    :return: 
-        (return_mean_std=False) normalized data, same shape as input. 
-        (return_mean_std=True) mean, std
-    """
-    if not calculated_input: 
-        if type(mean) == int: mean = [mean]
-        if type(std) == int: std = [std]
-
-        mean = np.array(mean) * max_pixel
-        std = np.array(std) * max_pixel
-
-        mean = torch.from_numpy(mean).view(1, mean.shape[0], 1, 1).type(torch.float32)
-        std = torch.from_numpy(std).view(1, std.shape[0], 1, 1).type(torch.float32)
-        
-    if return_mean_std: return mean, std
-    
-    assert data != None
-    assert type(mean) == torch.Tensor
-    assert type(std) == torch.Tensor
-    return (data - mean.to(data.device)) / std.to(data.device)
 
 # %% [code] {"jupyter":{"outputs_hidden":false}}
 class OneCyclePolicy_TPU:

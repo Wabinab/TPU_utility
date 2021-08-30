@@ -128,3 +128,48 @@ class CosineScheduler(lr_scheduler._LRScheduler):
         pct = curr_iter / self.num_iter
         cos_out = np.cos(np.pi * pct) + 1
         return [self.end_lr + (base_lr - self.end_lr) / 2 * cos_out for base_lr in self.base_lrs]
+
+
+# %% [markdown]
+# `train_tpu` normalize function gotten from https://github.com/albumentations-team/albumentations/blob/300ee99386ad27f482387047dac4f6dddff11ac2/albumentations/augmentations/functional.py#L131
+
+# %% [code] {"jupyter":{"outputs_hidden":false}}
+def normalize_fn(data=None, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), 
+              max_pixel=255, return_mean_std=True, calculated_input=False):
+    """
+    Normalize image function. 
+    
+    :input requirement: (PyTorch Tensor) of shape (Batch, channel, height, width)
+    
+    :args:
+        :data: (The input)
+        :mean: (int/tuple) If int, will be broadcasted in the channel dimension. 
+            If tuple, must have same number of values as number of channels. 
+            Mean of values. 
+        :std: (int/tuple) Check mean for explanation. Standard deviation of values. 
+        :max_pixel: This is the max pixel values. Default: 255 (so image are from 0-255).
+        :return_mean_std: (bool) Whether to just return the mean and std. If this is True,
+            no data passing in is required. Defaults: True.
+        :calculated input: (bool) Whether the input are already calculated, as in 
+            they are tensors to be used directly with the correct shape. 
+        
+    :return: 
+        (return_mean_std=False) normalized data, same shape as input. 
+        (return_mean_std=True) mean, std
+    """
+    if not calculated_input: 
+        if type(mean) == int: mean = [mean]
+        if type(std) == int: std = [std]
+
+        mean = np.array(mean) * max_pixel
+        std = np.array(std) * max_pixel
+
+        mean = torch.from_numpy(mean).view(1, mean.shape[0], 1, 1).type(torch.float32)
+        std = torch.from_numpy(std).view(1, std.shape[0], 1, 1).type(torch.float32)
+        
+    if return_mean_std: return mean, std
+    
+    assert data != None
+    assert type(mean) == torch.Tensor
+    assert type(std) == torch.Tensor
+    return (data - mean.to(data.device)) / std.to(data.device)
