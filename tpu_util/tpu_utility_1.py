@@ -166,27 +166,7 @@ class Stepper():
     def is_done(self):
         """Return True if schedule complted."""
         return self.n >= self.n_iter
-
-# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:53:08.882115Z","iopub.execute_input":"2021-08-13T07:53:08.882454Z","iopub.status.idle":"2021-08-13T07:53:08.888884Z","shell.execute_reply.started":"2021-08-13T07:53:08.882424Z","shell.execute_reply":"2021-08-13T07:53:08.887981Z"},"jupyter":{"outputs_hidden":false}}
-def annealing_no(start, end, pct):
-    """No annealing, always return 'start'."""
-    return start
-
-
-def annealing_linear(start, end, pct):
-    """Linearly anneal from start to end as pct goes from 0.0 to 1.0."""
-    return start + pct * (end - start)
-
-
-def annealing_exp(start, end, pct):
-    """Exponentially anneal from start to end as pct goes from 0.0 to 1.0."""
-    return start * (end / start) ** pct
-
-
-def annealing_cos(start, end, pct):
-    """Cosine anneal from start and end as pct goes from 0.0 to 1.0."""
-    cos_out = np.cos(np.pi * pct) + 1
-    return end + (start - end) / 2 * cos_out
+        
 
 # %% [code] {"jupyter":{"outputs_hidden":false}}
 class OneCyclePolicy_TPU:

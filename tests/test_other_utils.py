@@ -236,5 +236,41 @@ def test_cosine_scheduler_correct_value():
     assert (all_lr == comparable).all()
 
 
+def test_annealing_no_functions_correctly():
+    assert annealing_no(1, 10, 0.1) == 1
+    assert annealing_no(2, 10, 0.1) == 2
+    assert annealing_no(1, 2, 0.1) == 1
+    assert annealing_no(1, 10, 0.5) == 1
+
+
+@pytest.fixture
+def start_pct_end(tmpdir): return 0.001, 0.2, 10
+
+
+def test_annealing_linear_functions_correctly(start_pct_end):
+    start, pct, end = start_pct_end
+    assert annealing_linear(start, end, pct) == pytest.approx(2, 0.01)
+    assert annealing_linear(1, end, pct) == 2.8
+    assert annealing_linear(start, 100, pct) == pytest.approx(20, 0.001)
+    assert annealing_linear(start, end, 0.5) == pytest.approx(5, 0.01)
+
+
+def test_annealing_exp_functions_correctly(start_pct_end):
+    start, pct, end = start_pct_end
+    assert annealing_exp(start, end, pct) == start * ((end / start) ** pct)
+    assert annealing_exp(1, end, pct) == 1 * ((end / 1) ** pct)
+    assert annealing_exp(start, 100, pct) == start * ((100 / start) ** pct)
+    assert annealing_exp(start, end, 0.5) == start * ((end / start) ** 0.5)
+
+
+def test_annealing_cos_functions_correctly(start_pct_end):
+    start, pct, end = start_pct_end
+    assert annealing_cos(start, end, pct) == end + (((start - end) / 2) * (1 + np.cos(np.pi * pct)))
+    assert annealing_cos(1, end, pct) == end + (((1 - end) / 2) * (1 + np.cos(np.pi * pct)))
+    assert annealing_cos(start, 100, pct) == 100 + (((start - 100) / 2) * (1 + np.cos(np.pi * pct)))
+    assert annealing_cos(start, end, 0.5) == end + (((start - end) / 2) * (1 + np.cos(np.pi * 0.5)))
+
+
 # normalize_fn
-def test_normalize_fn
+def test_normalize_fn():
+    pass

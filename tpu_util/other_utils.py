@@ -130,6 +130,28 @@ class CosineScheduler(lr_scheduler._LRScheduler):
         return [self.end_lr + (base_lr - self.end_lr) / 2 * cos_out for base_lr in self.base_lrs]
 
 
+# %% [code] {"execution":{"iopub.status.busy":"2021-08-13T07:53:08.882115Z","iopub.execute_input":"2021-08-13T07:53:08.882454Z","iopub.status.idle":"2021-08-13T07:53:08.888884Z","shell.execute_reply.started":"2021-08-13T07:53:08.882424Z","shell.execute_reply":"2021-08-13T07:53:08.887981Z"},"jupyter":{"outputs_hidden":false}}
+def annealing_no(start, end, pct):
+    """No annealing, always return 'start'."""
+    return start
+
+
+def annealing_linear(start, end, pct):
+    """Linearly anneal from start to end as pct goes from 0.0 to 1.0."""
+    return start + (pct * (end - start))
+
+
+def annealing_exp(start, end, pct):
+    """Exponentially anneal from start to end as pct goes from 0.0 to 1.0."""
+    return start * (end / start) ** pct
+
+
+def annealing_cos(start, end, pct):
+    """Cosine anneal from start and end as pct goes from 0.0 to 1.0."""
+    cos_out = np.cos(np.pi * pct) + 1
+    return end + (start - end) / 2 * cos_out
+
+
 # %% [markdown]
 # `train_tpu` normalize function gotten from https://github.com/albumentations-team/albumentations/blob/300ee99386ad27f482387047dac4f6dddff11ac2/albumentations/augmentations/functional.py#L131
 
