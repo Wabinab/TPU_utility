@@ -20,9 +20,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
     - name: Build and publish
+      run: |
+        python3 setup.py sdist bdist_wheel
+        python3 -m twine upload dist/*
       env: 
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: |
-        python setup.py sdist
-        twine upload dist/*
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
