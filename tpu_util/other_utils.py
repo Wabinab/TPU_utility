@@ -157,31 +157,30 @@ def annealing_cos(start, end, pct):
 
 # %% [code] {"jupyter":{"outputs_hidden":false}}
 def normalize_fn(data=None, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), 
-              max_pixel=255, return_mean_std=True, calculated_input=False):
+              max_pixel=255, calculated_input=False):
     """
     Normalize image function. 
     
     :input requirement: (PyTorch Tensor) of shape (Batch, channel, height, width)
     
     :args:
-        :data: (The input)
+        :data: (The input). If passed in, will not return mean and std. If None, return
+            mean and std instead. 
         :mean: (int/tuple) If int, will be broadcasted in the channel dimension. 
             If tuple, must have same number of values as number of channels. 
             Mean of values. 
         :std: (int/tuple) Check mean for explanation. Standard deviation of values. 
-        :max_pixel: This is the max pixel values. Default: 255 (so image are from 0-255).
-        :return_mean_std: (bool) Whether to just return the mean and std. If this is True,
-            no data passing in is required. Defaults: True.
+        :max_pixel: (int/float) This is the max pixel values. Default: 255 (so image are from 0-255).
         :calculated input: (bool) Whether the input are already calculated, as in 
             they are tensors to be used directly with the correct shape. 
         
     :return: 
-        (return_mean_std=False) normalized data, same shape as input. 
-        (return_mean_std=True) mean, std
+        (data != None) normalized data, same shape as input. 
+        (data is None) mean, std 
     """
     if not calculated_input: 
-        if type(mean) == int: mean = [mean]
-        if type(std) == int: std = [std]
+        if type(mean) in [float, int]: mean = [mean]
+        if type(std) in [float, int]: std = [std]
 
         mean = np.array(mean) * max_pixel
         std = np.array(std) * max_pixel
@@ -189,9 +188,9 @@ def normalize_fn(data=None, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225
         mean = torch.from_numpy(mean).view(1, mean.shape[0], 1, 1).type(torch.float32)
         std = torch.from_numpy(std).view(1, std.shape[0], 1, 1).type(torch.float32)
         
-    if return_mean_std: return mean, std
+    if data == None: return mean, std
     
-    assert data != None
     assert type(mean) == torch.Tensor
     assert type(std) == torch.Tensor
+    assert data.shape[1] == mean.shape[1] == std.shape[1]
     return (data - mean.to(data.device)) / std.to(data.device)

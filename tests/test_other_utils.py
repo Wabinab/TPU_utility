@@ -272,5 +272,108 @@ def test_annealing_cos_functions_correctly(start_pct_end):
 
 
 # normalize_fn
-def test_normalize_fn():
-    pass
+def test_normalize_fn_default_correct_value():
+    mean, std = normalize_fn()
+
+    assert (mean.squeeze() == torch.Tensor([123.6750, 116.2800, 103.5300])).all()
+    assert (std.squeeze() == torch.Tensor([58.3950, 57.1200, 57.3750])).all()
+
+
+def test_normalize_fn_default_correct_shape():
+    mean, std = normalize_fn()
+
+    assert mean.shape == torch.Size([1, 3, 1, 1])
+    assert std.shape == torch.Size([1, 3, 1, 1])
+
+
+def test_normalize_fn_with_data(call_dl):
+    for data, target in call_dl["train"]: break
+    data_out = normalize_fn(data)
+    mean, std = normalize_fn()
+
+    assert (data_out == (data - mean) / std).all()
+
+
+def test_normalize_fn_with_data_shape_retains(call_dl):
+    for data, target in call_dl["train"]: break
+    data_out = normalize_fn(data)
+
+    assert data_out.shape == data.shape
+
+
+def test_normalize_fn_calculated_input_false(call_dl):
+    for data, target in call_dl["train"]: break
+    mean, std = normalize_fn()
+
+    data_out = normalize_fn(data, mean, std, calculated_input=True)
+    data_baseline = normalize_fn(data)
+
+    assert (data_out == data_baseline).all()
+
+
+def test_normalize_fn_float_mean_works():
+    mean, std = normalize_fn(mean=0.495)
+
+    one_mean = 0.495 * 255
+    assert (mean.squeeze() == torch.Tensor([one_mean, one_mean, one_mean])).all()
+
+
+def test_normalize_fn_float_std_works():
+    mean, std = normalize_fn(std=0.38)
+    one_std = 0.38 * 255
+
+    assert (std.squeeze() == torch.Tensor([one_std, one_std, one_std])).all()
+
+
+def test_normalize_fn_int_mean_works():
+    mean, std = normalize_fn(mean=3)
+
+    one_mean = 3 * 255
+    assert (mean.squeeze() == torch.Tensor([one_mean, one_mean, one_mean])).all()
+
+
+def test_normalize_fn_int_std_works():
+    mean, std = normalize_fn(std=3)
+
+    one_std = 3 * 255
+    assert (std.squeeze() == torch.Tensor([one_std, one_std, one_std])).all()
+
+
+def test_normalize_fn_max_pixel_works():
+    max_pixel = 2**16
+    mean, std = normalize_fn(max_pixel=max_pixel)
+
+    mean_comp = np.array([0.485, 0.456, 0.406], dtype=np.float32) * max_pixel
+    std_comp = np.array([0.229, 0.224, 0.225], dtype=np.float32) * max_pixel
+
+    assert mean.squeeze().numpy() == pytest.approx(mean_comp, 1e-6)
+    assert std.squeeze().numpy() == pytest.approx(std_comp, 1e-6)
+
+
+def test_max_pixel_can_be_float():
+    mean, std = normalize_fn(max_pixel=0.496)
+    compare = np.array([0.485, 0.456, 0.406], dtype=np.float32) * 0.496
+    assert mean.squeeze().numpy() == pytest.approx(compare, 1e-6)
+
+
+def test_normalize_fn_str_doesnt_work_mean(): 
+    with pytest.raises(np.core._exceptions.UFuncTypeError):
+        mean, std = normalize_fn(mean="0.64")
+
+
+def test_normalize_fn_str_doesnt_work_std(): 
+    with pytest.raises(np.core._exceptions.UFuncTypeError):
+        mean, std = normalize_fn(std="0.64")
+
+
+def test_normalize_fn_str_doesnt_work_max_pixel(): 
+    with pytest.raises(np.core._exceptions.UFuncTypeError):
+        mean, std = normalize_fn(max_pixel="0.64")
+
+
+def test_normalize_fn_with_another_shape_mean_works():
+    mean, std = normalize_fn(mean=(0.5, 0.6, 0.7, 0.8, 0.9))
+
+    assert mean.shape == torch.Size([1, 5, 1, 1])
+
+
