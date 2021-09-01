@@ -73,8 +73,8 @@ def cached_dataset(cache_train_loc=None, cache_val_loc=None):
     NOTE: This SHOULD BE CALLED inside the `_mp_fn` function of distributed. 
     Will fetch the cached dataset that is already preprocessed. 
     """
-    if cache_train_loc is None: cache_train_loc = "./cache_train"
-    if cache_val_loc is None: cache_val_loc = "./cache_val"
+    if cache_train_loc is None: cache_train_loc = "./cached-train"
+    if cache_val_loc is None: cache_val_loc = "./cached-val"
         
     train_ds = xcd.CachedDataset(None, cache_train_loc)
     val_ds = xcd.CachedDataset(None, cache_val_loc)
@@ -206,9 +206,9 @@ class OneCyclePolicy_TPU:
         self.cache_val_loc = cache_val_loc
         
         if get_dataset is cache_train_loc is None:
-            assert os.path.exists("./cache_train"), "Folder does not exist. Please put cached train dataset in this folder."
+            assert os.path.exists("./cached-train"), "Folder does not exist. Please put cached train dataset in this folder."
         if get_dataset is cache_val_loc is None:
-            assert os.path.exists("./cache_val"), "Folder does not exist. Please put cached val dataset in this folder."
+            assert os.path.exists("./cached-val"), "Folder does not exist. Please put cached val dataset in this folder."
         
         if num_iter is train_ds is None: 
             raise ValueError("One of num_iter or train_ds must be defined")
@@ -472,7 +472,8 @@ def predict_batch(model, dl_test, paths=None, normalize=False, device=None):
         model.eval()
         if normalize == True: mean, std = normalize_fn()
         elif type(normalize) == tuple: 
-            mean, std = normalize
+            # require changes because normalize not necessarily always state (mean, std, max_pixel). 
+            mean, std = normalize_fn(mean=normalize[0], std=normalize[1], max_pixel=normalize[2])
             normalize = True
             
         total = None
